@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Java / build output
+*.class
+out/
+build/
+target/
+bin/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Secrets
+.env
