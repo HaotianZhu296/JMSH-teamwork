@@ -19,6 +19,12 @@ Our week-by-week plan lives in a shared Google Sheet:
 
 Tasks for later weeks are placeholders for now. We'll split them up together as we go.
 
+## Deliverables
+
+| Week | Owner | Document |
+|------|-------|----------|
+| W1 | H | [Anomaly detection repo survey](docs/w1/anomaly-detection-repos.md) |
+
 ## Getting Started
 
 ```bash
