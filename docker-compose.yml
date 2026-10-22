@@ -1,0 +1,18 @@
+services:
+  mqtt5:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt5
+    ports:
+      - "1883:1883"
+    volumes:
+      - mqtt5_data:/mosquitto/data
+      - mqtt5_log:/mosquitto/log
+    restart: unless-stopped
+
+volumes:
+  mqtt5_data:
+  mqtt5_log:
+
+networks:
+  default:
+    name: mqtt5-network
