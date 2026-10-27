@@ -17,5 +17,8 @@ bin/
 *.iml
 .vscode/
 
+# Local working files (not committed)
+local/
+
 # Secrets
 .env
