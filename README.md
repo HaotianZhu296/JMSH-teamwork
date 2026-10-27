@@ -1,23 +1,8 @@
 # Machine Overheating Detection
 
-CS5010 team project.
+CS5010 team project — real-time thermal anomaly detection for industrial machines.
 
-## Project Plan
-
-Our week-by-week plan lives in a shared Google Sheet:
-
-**[Project Plan (Google Sheets)](https://docs.google.com/spreadsheets/d/1EfFjTMpIrMocx05VuP_xV_HTqF8-GEvK_7podCw1gYs/edit?usp=sharing)**
-
-> **Do not share this link outside the group.** Anyone with the link can open the sheet. This repository is private, so keep it private while the link is here.
-
-## Timeline
-
-| Date | Milestone |
-|------|-----------|
-| Oct 7 | Week 1 tasks due (assigned in the sheet, so check your row) |
-| Oct 9 | Last day to send suggestions about the plan |
-
-Tasks for later weeks are placeholders for now. We'll split them up together as we go.
+**[Project Specs & Task Assignments (Google Docs)](https://docs.google.com/document/d/1hcGYfW0bl1EBTFzPu4H_aEc1DeIBGTN7JPLeuaUcVMo/edit?usp=sharing)**
 
 ## Getting Started
 
