@@ -1,6 +1,7 @@
 package edu.northeastern.cs5010.mhd.store;
 
 import edu.northeastern.cs5010.mhd.model.AlertRecord;
+import edu.northeastern.cs5010.mhd.model.AnomalyScore;
 import edu.northeastern.cs5010.mhd.model.SensorReading;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,6 +100,36 @@ class EventStoreTest {
 
         List<String> ids = store.getMachineIds();
         assertEquals(List.of("m1", "m2", "m3"), ids);
+    }
+
+    @Test
+    void insertAndCountScores() throws SQLException {
+        AnomalyScore s = new AnomalyScore(1000L, "m1", 0.85, "IsolationForest");
+        store.insertScore(s);
+        store.insertScore(new AnomalyScore(2000L, "m1", 0.92, "IsolationForest"));
+        assertEquals(2, store.getScoreCount());
+    }
+
+    @Test
+    void getRecentScoresFiltersByMachine() throws SQLException {
+        store.insertScore(new AnomalyScore(1000L, "m1", 0.5, "IF"));
+        store.insertScore(new AnomalyScore(2000L, "m2", 0.7, "IF"));
+        store.insertScore(new AnomalyScore(3000L, "m1", 0.9, "IF"));
+
+        List<AnomalyScore> m1 = store.getRecentScores("m1", 10);
+        assertEquals(2, m1.size());
+        assertEquals(3000L, m1.get(0).getTimestamp());
+        assertEquals(0.9, m1.get(0).getScore(), 0.01);
+    }
+
+    @Test
+    void batchInsertScores() throws SQLException {
+        List<AnomalyScore> batch = List.of(
+                new AnomalyScore(1000L, "m1", 0.1, "IF"),
+                new AnomalyScore(2000L, "m1", 0.5, "IF"),
+                new AnomalyScore(3000L, "m2", 0.9, "IF"));
+        store.insertScoresBatch(batch);
+        assertEquals(3, store.getScoreCount());
     }
 
     @Test

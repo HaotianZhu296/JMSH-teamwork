@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import edu.northeastern.cs5010.mhd.model.AlertRecord;
+import edu.northeastern.cs5010.mhd.model.AnomalyScore;
 import edu.northeastern.cs5010.mhd.model.SensorReading;
 import edu.northeastern.cs5010.mhd.store.EventStore;
 
@@ -22,6 +23,7 @@ public class DashboardDataProvider {
     public String getSummaryJson() throws SQLException {
         JsonObject json = new JsonObject();
         json.addProperty("readingCount", store.getReadingCount());
+        json.addProperty("scoreCount", store.getScoreCount());
         json.addProperty("alertCount", store.getAlertCount());
 
         JsonArray machines = new JsonArray();
@@ -45,6 +47,20 @@ public class DashboardDataProvider {
             obj.addProperty("torqueNm", r.getTorqueNm());
             obj.addProperty("toolWearMin", r.getToolWearMin());
             obj.addProperty("tempDiffK", r.getTempDiffK());
+            arr.add(obj);
+        }
+        return GSON.toJson(arr);
+    }
+
+    public String getRecentScoresJson(String machineId, int limit) throws SQLException {
+        List<AnomalyScore> scores = store.getRecentScores(machineId, limit);
+        JsonArray arr = new JsonArray();
+        for (AnomalyScore s : scores) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("timestamp", s.getTimestamp());
+            obj.addProperty("machineId", s.getMachineId());
+            obj.addProperty("score", s.getScore());
+            obj.addProperty("modelName", s.getModelName());
             arr.add(obj);
         }
         return GSON.toJson(arr);

@@ -1,6 +1,7 @@
 package edu.northeastern.cs5010.mhd.store;
 
 import edu.northeastern.cs5010.mhd.model.AlertRecord;
+import edu.northeastern.cs5010.mhd.model.AnomalyScore;
 import edu.northeastern.cs5010.mhd.model.SensorReading;
 
 import java.sql.*;
@@ -40,11 +41,22 @@ public class EventStore implements AutoCloseable {
                     detector_name TEXT NOT NULL
                 )""");
             stmt.execute("""
+                CREATE TABLE IF NOT EXISTS scores (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp_ms INTEGER NOT NULL,
+                    machine_id TEXT NOT NULL,
+                    score REAL NOT NULL,
+                    model_name TEXT NOT NULL
+                )""");
+            stmt.execute("""
                 CREATE INDEX IF NOT EXISTS idx_readings_machine
                 ON readings (machine_id, timestamp_ms)""");
             stmt.execute("""
                 CREATE INDEX IF NOT EXISTS idx_alerts_machine
                 ON alerts (machine_id, timestamp_ms)""");
+            stmt.execute("""
+                CREATE INDEX IF NOT EXISTS idx_scores_machine
+                ON scores (machine_id, timestamp_ms)""");
         }
     }
 
@@ -156,6 +168,67 @@ public class EventStore implements AutoCloseable {
                             AlertRecord.Severity.valueOf(rs.getString("severity")),
                             rs.getString("reason"),
                             rs.getString("detector_name")));
+                }
+            }
+        }
+        return result;
+    }
+
+    public void insertScore(AnomalyScore s) throws SQLException {
+        String sql = "INSERT INTO scores "
+                + "(timestamp_ms, machine_id, score, model_name) "
+                + "VALUES (?, ?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, s.getTimestamp());
+            ps.setString(2, s.getMachineId());
+            ps.setDouble(3, s.getScore());
+            ps.setString(4, s.getModelName());
+            ps.executeUpdate();
+        }
+    }
+
+    public void insertScoresBatch(List<AnomalyScore> scores) throws SQLException {
+        String sql = "INSERT INTO scores "
+                + "(timestamp_ms, machine_id, score, model_name) "
+                + "VALUES (?, ?, ?, ?)";
+        conn.setAutoCommit(false);
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (AnomalyScore s : scores) {
+                ps.setLong(1, s.getTimestamp());
+                ps.setString(2, s.getMachineId());
+                ps.setDouble(3, s.getScore());
+                ps.setString(4, s.getModelName());
+                ps.addBatch();
+            }
+            ps.executeBatch();
+            conn.commit();
+        } finally {
+            conn.setAutoCommit(true);
+        }
+    }
+
+    public int getScoreCount() throws SQLException {
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM scores")) {
+            return rs.getInt(1);
+        }
+    }
+
+    public List<AnomalyScore> getRecentScores(String machineId, int limit) throws SQLException {
+        String sql = "SELECT timestamp_ms, machine_id, score, model_name "
+                + "FROM scores WHERE machine_id = ? "
+                + "ORDER BY timestamp_ms DESC LIMIT ?";
+        List<AnomalyScore> result = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, machineId);
+            ps.setInt(2, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.add(new AnomalyScore(
+                            rs.getLong("timestamp_ms"),
+                            rs.getString("machine_id"),
+                            rs.getDouble("score"),
+                            rs.getString("model_name")));
                 }
             }
         }

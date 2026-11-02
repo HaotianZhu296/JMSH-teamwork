@@ -94,6 +94,22 @@ class CsvImporterTest {
     }
 
     @Test
+    void importScores() throws Exception {
+        Path csv = Files.createTempFile("scores-", ".csv");
+        Files.writeString(csv, """
+                timestamp,machine_id,score,model_name
+                1000,m1,0.85,IsolationForest
+                2000,m2,0.42,IsolationForest
+                3000,m1,0.91,IsolationForest
+                """);
+        CsvImporter importer = new CsvImporter(store);
+        int count = importer.importScores(csv);
+        assertEquals(3, count);
+        assertEquals(3, store.getScoreCount());
+        Files.deleteIfExists(csv);
+    }
+
+    @Test
     void importReadingsWithTimestampAndMachineId() throws Exception {
         Path csv = Files.createTempFile("full-", ".csv");
         Files.writeString(csv, """

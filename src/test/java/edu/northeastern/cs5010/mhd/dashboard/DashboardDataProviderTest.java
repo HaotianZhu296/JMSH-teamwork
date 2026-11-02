@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import edu.northeastern.cs5010.mhd.model.AlertRecord;
+import edu.northeastern.cs5010.mhd.model.AnomalyScore;
 import edu.northeastern.cs5010.mhd.model.SensorReading;
 import edu.northeastern.cs5010.mhd.store.EventStore;
 import org.junit.jupiter.api.AfterEach;
@@ -58,6 +59,30 @@ class DashboardDataProviderTest {
         JsonObject reading = arr.get(0).getAsJsonObject();
         assertEquals(298.1, reading.get("airTempK").getAsDouble(), 0.01);
         assertEquals(10.5, reading.get("tempDiffK").getAsDouble(), 0.01);
+    }
+
+    @Test
+    void recentScoresJsonReturnsCorrectData() throws Exception {
+        store.insertScore(new AnomalyScore(
+                4000L, "m1", 0.87, "IsolationForest"));
+
+        String json = provider.getRecentScoresJson("m1", 10);
+        JsonArray arr = GSON.fromJson(json, JsonArray.class);
+        assertEquals(1, arr.size());
+        JsonObject score = arr.get(0).getAsJsonObject();
+        assertEquals("m1", score.get("machineId").getAsString());
+        assertEquals(0.87, score.get("score").getAsDouble(), 0.01);
+        assertEquals("IsolationForest", score.get("modelName").getAsString());
+    }
+
+    @Test
+    void summaryJsonIncludesScoreCount() throws Exception {
+        store.insertScore(new AnomalyScore(1000L, "m1", 0.5, "IF"));
+        store.insertScore(new AnomalyScore(2000L, "m1", 0.8, "IF"));
+
+        String json = provider.getSummaryJson();
+        JsonObject obj = GSON.fromJson(json, JsonObject.class);
+        assertEquals(2, obj.get("scoreCount").getAsInt());
     }
 
     @Test

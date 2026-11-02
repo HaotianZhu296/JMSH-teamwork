@@ -1,6 +1,7 @@
 package edu.northeastern.cs5010.mhd.store;
 
 import edu.northeastern.cs5010.mhd.model.AlertRecord;
+import edu.northeastern.cs5010.mhd.model.AnomalyScore;
 import edu.northeastern.cs5010.mhd.model.SensorReading;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -46,6 +47,29 @@ public class CsvImporter {
                         row.get("reason"),
                         row.get("detector_name"));
                 store.insertAlert(alert);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public int importScores(Path csvFile) throws IOException, SQLException {
+        int count = 0;
+        try (Reader reader = bomSkippingReader(csvFile);
+             CSVParser parser = CSVFormat.DEFAULT.builder()
+                     .setHeader()
+                     .setSkipHeaderRecord(true)
+                     .setIgnoreHeaderCase(true)
+                     .setTrim(true)
+                     .build()
+                     .parse(reader)) {
+            for (CSVRecord row : parser) {
+                AnomalyScore score = new AnomalyScore(
+                        Long.parseLong(row.get("timestamp")),
+                        row.get("machine_id"),
+                        Double.parseDouble(row.get("score")),
+                        row.get("model_name"));
+                store.insertScore(score);
                 count++;
             }
         }
