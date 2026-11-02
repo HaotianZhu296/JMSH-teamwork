@@ -1,18 +1,35 @@
 services:
-  mqtt5:
-    image: eclipse-mosquitto:latest
-    container_name: mqtt5
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mhd-mosquitto
     ports:
       - "1883:1883"
     volumes:
-      - mqtt5_data:/mosquitto/data
-      - mqtt5_log:/mosquitto/log
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./config/acl.conf:/mosquitto/config/acl.conf:ro
+      - ./config/pwfile:/mosquitto/config/pwfile:ro
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    restart: unless-stopped
+
+  nodered:
+    image: nodered/node-red:3.1
+    container_name: mhd-dashboard
+    ports:
+      - "1880:1880"
+    volumes:
+      - ./dashboard/flows.json:/data/flows.json:ro
+      - ./dashboard/settings.js:/data/settings.js:ro
+      - nodered-data:/data
+    depends_on:
+      - mosquitto
     restart: unless-stopped
 
 volumes:
-  mqtt5_data:
-  mqtt5_log:
+  mosquitto-data:
+  mosquitto-log:
+  nodered-data:
 
 networks:
   default:
-    name: mqtt5-network
+    name: mhd-network
