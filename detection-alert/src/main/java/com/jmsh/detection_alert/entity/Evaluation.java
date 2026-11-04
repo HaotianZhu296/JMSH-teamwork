@@ -4,6 +4,8 @@ import com.jmsh.detection_alert.domain.AlertStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
@@ -40,4 +42,7 @@ public class Evaluation extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "alert_status", nullable = false)
     private AlertStatus alertStatus;
+
+    @Column(name = "reasons", nullable = false)
+    private List<String> reasons;
 }

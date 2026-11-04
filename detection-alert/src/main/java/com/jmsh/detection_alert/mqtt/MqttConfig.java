@@ -4,6 +4,7 @@ import com.jmsh.detection_alert.dto.SensorReading;
 import com.jmsh.detection_alert.service.DetectionService;
 import lombok.AllArgsConstructor;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.dsl.IntegrationFlow;
@@ -16,10 +17,20 @@ import tools.jackson.databind.ObjectMapper;
 @AllArgsConstructor
 public class MqttConfig {
 
-    // TODO: Move these to application.properties or environment variables for better configuration management
-    private static final String BROKER_URL = "tcp://localhost:1883";
-    private static final String CLIENT_ID = "spring-detection-service";
-    private static final String TOPIC = "sensors/+/detections";
+    @Value("${mqtt.broker-url}")
+    private String brokerUrl;
+
+    @Value("${mqtt.client-id}")
+    private String clientId;
+
+    @Value("${mqtt.topic}")
+    private String topic;
+
+    @Value("${mqtt.qos:1}")
+    private int qos;
+
+    @Value("${mqtt.completion-timeout:5000}")
+    private int completionTimeout;
 
     private final DetectionService detectionService;
     private final ObjectMapper objectMapper;
@@ -29,7 +40,7 @@ public class MqttConfig {
     public MqttPahoClientFactory mqttClientFactory() {
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
         MqttConnectOptions options = new MqttConnectOptions();
-        options.setServerURIs(new String[]{ BROKER_URL });
+        options.setServerURIs(new String[]{ brokerUrl });
         options.setCleanSession(true);
         // TODO: Add authentication if Mosquitto later
         // options.setUserName("username");
@@ -42,9 +53,9 @@ public class MqttConfig {
     @Bean
     public MqttPahoMessageDrivenChannelAdapter mqttInboundAdapter(MqttPahoClientFactory clientFactory) {
         MqttPahoMessageDrivenChannelAdapter adapter =
-                new MqttPahoMessageDrivenChannelAdapter(CLIENT_ID, clientFactory, TOPIC);
-        adapter.setCompletionTimeout(5000);
-        adapter.setQos(1);
+                new MqttPahoMessageDrivenChannelAdapter(clientId, clientFactory, topic);
+        adapter.setCompletionTimeout(completionTimeout);
+        adapter.setQos(qos);
         return adapter;
     }
 
