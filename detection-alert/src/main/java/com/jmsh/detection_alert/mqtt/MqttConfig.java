@@ -2,7 +2,7 @@ package com.jmsh.detection_alert.mqtt;
 
 import com.jmsh.detection_alert.dto.SensorReading;
 import com.jmsh.detection_alert.service.DetectionService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +14,7 @@ import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannel
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class MqttConfig {
 
     @Value("${mqtt.broker-url}")

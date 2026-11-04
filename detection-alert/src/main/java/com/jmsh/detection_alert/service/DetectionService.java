@@ -6,7 +6,7 @@ import com.jmsh.detection_alert.dto.SensorReading;
 import com.jmsh.detection_alert.dto.ThresholdEvaluation;
 import com.jmsh.detection_alert.entity.Evaluation;
 import com.jmsh.detection_alert.repository.EvaluationRepository;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class DetectionService {
     @Value("${thresholds.airTemperature.warning}")
     private double warningAirTemperature;
