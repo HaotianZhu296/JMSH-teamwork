@@ -1,3 +1,42 @@
 spring:
   application:
     name: detection-alert
+  datasource:
+    url: jdbc:postgresql://localhost:5432/detection_db
+    username: postgres
+    password: secret
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+mqtt:
+  broker-url: tcp://localhost:1883
+  client-id: spring-detection-service
+  topic: sensors/+/detections
+  qos: 1
+  completion-timeout: 5000
+
+thresholds:
+  airTemperature:
+    warning: 75.0
+    critical: 90.0
+  processTemperature:
+    warning: 80.0
+    critical: 95.0
+  rotationalSpeed:
+    warning: 1500.0
+    critical: 2000.0
+  torque:
+    warning: 300.0
+    critical: 400.0
+  toolWear:
+    warning: 50.0
+    critical: 75.0
+  warningScore: 0.65
+  criticalScore: 0.85
