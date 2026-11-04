@@ -2,12 +2,10 @@ spring:
   application:
     name: detection-alert
   datasource:
-    url: jdbc:postgresql://localhost:5432/detection_db
-    username: postgres
-    password: secret
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:sqlite:./data/detection-alert.db
+    driver-class-name: org.sqlite.JDBC
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:
       ddl-auto: update
     show-sql: true
