@@ -9,9 +9,22 @@ services:
       - mqtt5_log:/mosquitto/log
     restart: unless-stopped
 
+  detection-alert:
+    build:
+      context: ./detection-alert
+    container_name: detection-alert
+    environment:
+      MQTT_BROKER_URL: tcp://mqtt5:1883
+    depends_on:
+      - mqtt5
+    volumes:
+      - detection_alert_data:/app/data
+    restart: unless-stopped
+
 volumes:
   mqtt5_data:
   mqtt5_log:
+  detection_alert_data:
 
 networks:
   default:
