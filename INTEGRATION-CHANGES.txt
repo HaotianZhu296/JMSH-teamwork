@@ -1,157 +1,247 @@
 INTEGRATION CHANGES — submission1 branch
 =========================================
-Date: 2026-11-05
+Date:   2026-11-05
 Author: Haotian Zhu (Part D)
 
 This document lists all changes made when merging the four part branches
-into the submission1 integration branch.
+into the submission1 integration branch, the test environment used,
+and the verification results.
 
 Branches merged:
-  - feature/data-simulation  (Part A: Data & Simulation)
-  - data_training             (Part B: Training & Evaluation) — no code changes
-  - detection-alert           (Part C: Detection & Alerting)
+  - feature/data-simulation           (Part A: Data & Simulation)
+  - data_training                      (Part B: Training & Evaluation) — no code
+  - detection-alert                    (Part C: Detection & Alerting)
   - part-d/haotian-security-storage-ui (Part D: Security, Storage & UI)
 
 
-1. UNIFIED DATA FORMAT (Part A → Part C/D)
-------------------------------------------
-Problem:
-  Part A published MQTT telemetry as CSV lines using Electric Motor
-  Temperature dataset fields (stator_winding, coolant, ambient, etc.).
-  Parts C and D expected JSON with AI4I 2020 field names (airTemperature,
-  processTemperature, rotationalSpeed, torque, toolWear).
+================================================================================
+PART-BY-PART CHANGES
+================================================================================
 
-Fix:
-  Added TelemetryJson.java alongside the existing TelemetryCsv.java.
-  The simulator now publishes JSON with the unified field mapping:
+PART A — Data & Simulation (feature/data-simulation)
+-----------------------------------------------------
+Changes:
+  1. Telemetry output format: CSV → JSON
+     The simulator originally published each reading as a CSV line with
+     Electric Motor Temperature dataset fields (stator_winding, coolant,
+     ambient, motor_speed, etc.). Parts C and D expect JSON with the
+     shared field names (airTemperature, processTemperature, etc.).
 
-    Electric Motor field     →  Unified JSON field      →  Part C DTO field
-    ─────────────────────────────────────────────────────────────────────────
-    ambient (°C)             →  airTemperature           →  airTemperature
-    stator_winding (°C)      →  processTemperature       →  processTemperature
-    motor_speed (rpm)        →  rotationalSpeed           →  rotationalSpeed
-    torque (Nm)              →  torque                    →  torque
-    (not in dataset)         →  toolWear = 0.0            →  toolWear
-    (preserved)              →  profileId, sampleIndex, coolantC, iD, iQ, uD, uQ
+     Added TelemetryJson.java alongside the existing TelemetryCsv.java.
+     SensorSimulator.run() now calls TelemetryJson.format() instead of
+     TelemetryCsv.format(). The original TelemetryCsv class and its tests
+     are preserved — no deletions.
 
-  SensorSimulatorTest updated to validate JSON output instead of CSV.
+     Field mapping applied:
+       Electric Motor field     →  Unified JSON field
+       ──────────────────────────────────────────────
+       ambient (°C)             →  airTemperature
+       stator_winding (°C)      →  processTemperature
+       motor_speed (rpm)        →  rotationalSpeed
+       torque (Nm)              →  torque
+       (not in dataset)         →  toolWear = 0.0
+       profileId, sampleIndex,    (preserved as extra fields
+        coolantC, iD, iQ, uD, uQ)  in JSON for traceability)
 
-Files changed:
-  - NEW  src/main/java/.../pipeline/TelemetryJson.java
-  - MOD  src/main/java/.../pipeline/SensorSimulator.java (line 122)
-  - MOD  src/test/java/.../pipeline/SensorSimulatorTest.java
-  - NEW  src/test/java/.../pipeline/TelemetryJsonTest.java
+  2. SensorSimulatorTest updated
+     Three test methods that asserted CSV output now validate JSON fields
+     using a regex-based helper instead of TelemetryCsv.parse().
 
+  3. New TelemetryJsonTest
+     Two tests verifying JSON structure and field mapping correctness.
 
-2. PART C COMPILATION FIX (Lombok + JDK 25)
---------------------------------------------
-Problem:
-  Lombok 1.18.36 crashes on JDK 25 with TypeTag::UNKNOWN error.
-  Also, annotation processor not configured in maven-compiler-plugin,
-  so @RequiredArgsConstructor and @Builder were silently ignored.
-
-Fix:
-  - Added <annotationProcessorPaths> in detection-alert/pom.xml
-  - Upgraded Lombok to 1.18.48 (supports JDK 25)
-
-Files changed:
-  - MOD  detection-alert/pom.xml
+Files:
+  NEW  src/main/java/.../pipeline/TelemetryJson.java
+  MOD  src/main/java/.../pipeline/SensorSimulator.java  (line 122: format call)
+  MOD  src/test/java/.../pipeline/SensorSimulatorTest.java
+  NEW  src/test/java/.../pipeline/TelemetryJsonTest.java
 
 
-3. MQTT TOPIC FIX (Part C)
---------------------------
-Problem:
-  Part C subscribed to "sensors/+/detections" but Part A publishes to
-  "sensors/{machine_id}/telemetry". Topic mismatch = no messages received.
-
-Fix:
-  Changed topic in application.yaml to "sensors/+/telemetry".
-
-Files changed:
-  - MOD  detection-alert/src/main/resources/application.yaml
+PART B — Training & Evaluation (data_training)
+-----------------------------------------------
+No changes — the branch is identical to main. No code was submitted.
 
 
-4. MQTT AUTHENTICATION (Part C)
--------------------------------
-Problem:
-  Part D's Mosquitto broker requires authentication (allow_anonymous false),
-  but Part C had authentication commented out with a TODO.
+PART C — Detection & Alerting (detection-alert)
+------------------------------------------------
+Changes:
+  1. Lombok compilation fix
+     Problem: Lombok 1.18.36 crashes on JDK 25 with
+     "TypeTag::UNKNOWN" error. The annotation processor was also not
+     configured in maven-compiler-plugin, so @RequiredArgsConstructor
+     and @Builder were silently ignored — resulting in 3 compile errors.
+     Fix: Added <annotationProcessorPaths> to the maven-compiler-plugin
+     section of detection-alert/pom.xml. Upgraded Lombok to 1.18.48.
 
-Fix:
-  - Added mqtt.username and mqtt.password to application.yaml
-    (user: detector, matching Part D's ACL config)
-  - Updated MqttConfig.java to read credentials from config and set them
-    on MqttConnectOptions
+  2. MQTT topic mismatch
+     Problem: application.yaml subscribed to "sensors/+/detections" but
+     Part A publishes to "sensors/{machine_id}/telemetry". The detection
+     service would never receive any messages.
+     Fix: Changed mqtt.topic to "sensors/+/telemetry".
 
-Files changed:
-  - MOD  detection-alert/src/main/java/.../mqtt/MqttConfig.java
-  - MOD  detection-alert/src/main/resources/application.yaml
+  3. MQTT authentication missing
+     Problem: Part D's broker requires authentication
+     (allow_anonymous false). Part C had authentication commented out
+     with "// TODO: Add authentication if Mosquitto later".
+     Fix:
+       - Added mqtt.username=detector and mqtt.password=detect_pass_2024
+         to application.yaml.
+       - Updated MqttConfig.java to read the new config fields and apply
+         them via MqttConnectOptions.setUserName()/setPassword().
+         The auth block is conditional — if username is empty or absent,
+         it connects without credentials (backwards compatible).
 
-
-5. DOCKER-COMPOSE MERGE
------------------------
-Problem:
-  Part C used a separate Mosquitto container (mqtt5, mqtt5-network).
-  Part D used mhd-mosquitto with secured config.
-  The two docker-compose.yml files conflicted.
-
-Fix:
-  Merged into one docker-compose.yml with three services:
-    - mosquitto (secured, with ACL/pwfile from Part D)
-    - nodered (dashboard from Part D)
-    - detection-alert (Spring Boot from Part C)
-  All on the same network (mhd-network).
-  detection-alert now points to "mosquitto" (not "mqtt5").
-
-Files changed:
-  - MOD  docker-compose.yml
-
-
-6. POM.XML MERGE
------------------
-Problem:
-  Part A and Part D both created pom.xml with different dependencies
-  and version numbers. Add/add conflict.
-
-Fix:
-  Merged into one pom.xml with all dependencies:
-    - commons-csv 1.12.0 (Part A needed 1.10.0, upgraded)
-    - paho 1.2.5 (both parts)
-    - gson 2.11.0 (Part D)
-    - sqlite-jdbc 3.46.1.3 (Part D)
-    - junit 5.11.3 (Part D, upgraded from 5.10.2)
-
-Files changed:
-  - MOD  pom.xml
+Files:
+  MOD  detection-alert/pom.xml
+  MOD  detection-alert/src/main/resources/application.yaml
+  MOD  detection-alert/src/main/java/.../mqtt/MqttConfig.java
 
 
-7. DASHBOARD DISPLAY UPDATE (Part D)
--------------------------------------
-Problem:
-  Dashboard was configured for Kelvin (290-320K range, labels "K").
-  With Electric Motor Temperature data, values are in Celsius (0-150°C).
+PART D — Security, Storage & UI (part-d/haotian-security-storage-ui)
+--------------------------------------------------------------------
+Changes:
+  1. Dashboard parse function updated
+     The Node-RED parse-telemetry function now accepts both the new
+     unified field names (machineId, processTemperature) and the old
+     ones (machine_id, process_temp_k, processTempK) for backwards
+     compatibility.
 
-Fix:
-  - Updated parse-telemetry function to accept both field name formats
-    (processTemperature, process_temp_k, processTempK, machineId, machine_id)
-  - Changed chart Y-axis range to 0-150
-  - Changed gauge range to 0-150, segments at 80/95 (matching Part C thresholds)
-  - Changed labels from "K" to "°C"
+  2. Dashboard display units: K → °C
+     The Electric Motor Temperature dataset uses Celsius. Updated:
+       - Chart Y-axis: 290–320 → 0–150
+       - Gauge range:  290–330 → 0–150
+       - Gauge warning/critical segments: 310/313 → 80/95
+         (matches Part C's processTemperature thresholds)
+       - Labels: "K" → "°C"
 
-Files changed:
-  - MOD  dashboard/flows.json
-
-
-REMAINING KNOWN ISSUES
-======================
-1. Part B (data_training) — no code submitted yet
-2. Part C contextLoads test fails without running broker (expected behavior)
-3. config/pwfile needs to be generated with generate-passwords.sh before
-   docker-compose up (requires mosquitto_passwd installed)
-4. Node-RED requires node-red-dashboard npm package in the container
+Files:
+  MOD  dashboard/flows.json
 
 
-TEST RESULTS AFTER INTEGRATION
-==============================
-Main project (Part A + D):  58 tests, 57 pass, 1 skip (needs data file)
-Part C (detection-alert):    4 tests,  3 pass, 1 error (contextLoads, needs broker)
+CROSS-MODULE (merge conflicts resolved)
+----------------------------------------
+  1. pom.xml (add/add conflict)
+     Part A and Part D both created this file with different dependencies.
+     Merged into one, using the higher version where they differed:
+       commons-csv  1.10.0 → 1.12.0
+       junit        5.10.2 → 5.11.3
+     Added Part D deps: gson 2.11.0, sqlite-jdbc 3.46.1.3.
+     Shared dep kept: paho 1.2.5.
+
+  2. docker-compose.yml (content conflict)
+     Part C defined: container "mqtt5", network "mqtt5-network".
+     Part D defined: container "mhd-mosquitto", network "mhd-network".
+     Merged into one file with three services:
+       mosquitto        — secured broker (ACL + password file)
+       nodered           — Node-RED dashboard
+       detection-alert  — Spring Boot detection service
+     All on mhd-network. detection-alert environment variable updated:
+     MQTT_BROKER_URL=tcp://mosquitto:1883 (was tcp://mqtt5:1883).
+
+
+================================================================================
+TEST ENVIRONMENT
+================================================================================
+
+Machine:   MacBook Pro (Apple Silicon)
+OS:        macOS 16.4 (Darwin 27.2.0)
+Java:      OpenJDK 25.0.3 LTS (Eclipse Temurin)
+Maven:     3.9.x
+Mosquitto: 2.1.2_3 (installed via Homebrew for local integration testing)
+
+
+================================================================================
+VERIFICATION RESULTS
+================================================================================
+
+1. Unit Tests
+─────────────
+Main project (Part A + Part D combined):
+  Tests run: 58,  Passed: 57,  Skipped: 1,  Failed: 0
+  Breakdown:
+    TelemetryCsvTest           4/4  pass
+    TelemetryJsonTest          2/2  pass  (new)
+    OverheatScenarioTest       5/5  pass
+    MotorDataReaderTest        6/7  pass, 1 skip (requires Kaggle dataset file)
+    SensorSimulatorTest        6/6  pass
+    BrokerAclValidatorTest    11/11 pass
+    DashboardDataProviderTest  6/6  pass
+    CsvImporterTest            6/6  pass
+    EventStoreTest            11/11 pass
+
+Part C (detection-alert):
+  Tests run: 4,   Passed: 3,   Errors: 1
+    DetectionServiceTest       3/3  pass
+    DetectionAlertApplicationTests  1/1  ERROR
+      (contextLoads fails without running broker + data directory;
+       this is expected — it passes after docker-compose up)
+
+2. EventStore CLI End-to-End
+────────────────────────────
+  import-readings  test_readings.csv  → "Imported 4 readings"     ✓
+  import-scores    test_scores.csv    → "Imported 3 scores"       ✓
+  import-alerts    test_alerts.csv    → "Imported 2 alerts"       ✓
+  summary                            → Readings: 4, Scores: 3,
+                                        Alerts: 2, Machines: [motor-01]  ✓
+  recent-alerts    5                  → CRITICAL alert displayed   ✓
+  recent-scores    motor-01 5        → 3 scores displayed (desc)  ✓
+
+3. DashboardDataProvider JSON API
+─────────────────────────────────
+  getSummaryJson()            → correct counts + machineIds     ✓
+  getRecentReadingsJson()     → correct fields + tempDiffK      ✓
+  getRecentScoresJson()       → correct scores + modelName      ✓
+  getRecentAlertsJson()       → correct alerts + detector       ✓
+
+4. ACL Validator vs config/acl.conf
+───────────────────────────────────
+  simulator  publish  sensors/m1/telemetry   → true   ✓
+  simulator  subscribe sensors (any)         → false  ✓
+  detector   subscribe sensors/m1/telemetry  → true   ✓
+  detector   publish  alerts/m1              → true   ✓
+  dashboard  subscribe sensors + alerts      → true   ✓
+  dashboard  publish  (any)                  → false  ✓
+  eventstore subscribe alerts + sensors      → true   ✓
+  eventstore publish  (any)                  → false  ✓
+
+5. MQTT Broker (Mosquitto 2.1.2, local)
+───────────────────────────────────────
+  Authentication — valid credentials         → connected        ✓
+  Authentication — wrong password            → refused          ✓
+  ACL enforcement — simulator write alerts   → silently dropped ✓
+
+6. MQTT End-to-End Message Delivery
+───────────────────────────────────
+  Test A: simulator publishes JSON telemetry on sensors/motor-01/telemetry
+          dashboard subscribes to sensors/+/telemetry
+          → JSON message received intact, all fields match     ✓
+
+  Test B: detector publishes JSON alert on alerts/motor-01
+          dashboard subscribes to alerts/#
+          → alert message received intact, all fields match    ✓
+
+
+================================================================================
+REMAINING ITEMS
+================================================================================
+
+1. Part B (data_training)
+   No code on the branch. Training/evaluation module not yet implemented.
+
+2. Node-RED Dashboard Package
+   The nodered/node-red:3.1 Docker image does not include
+   "node-red-dashboard" by default. The UI widgets (chart, gauge, toast)
+   require it. Options:
+     a) Add to a custom Dockerfile:
+        RUN npm install node-red-dashboard
+     b) Install after container start:
+        docker exec mhd-dashboard npm install node-red-dashboard
+
+3. Password File Generation
+   config/pwfile must be generated before docker-compose up.
+   Run: ./config/generate-passwords.sh
+   (requires mosquitto_passwd, installed via: brew install mosquitto)
+
+4. Part C contextLoads Test
+   Fails without running infrastructure. Consider adding a test profile
+   or @DisabledIfEnvironmentVariable to skip gracefully in CI.
