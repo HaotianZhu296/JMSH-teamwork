@@ -22,3 +22,6 @@ local/
 
 # Secrets
 .env
+
+# Datasets (large; download separately, see README)
+data/*.csv
