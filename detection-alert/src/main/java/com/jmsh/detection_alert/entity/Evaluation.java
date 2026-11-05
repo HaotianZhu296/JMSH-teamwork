@@ -43,6 +43,7 @@ public class Evaluation extends BaseEntity {
     @Column(name = "alert_status", nullable = false)
     private AlertStatus alertStatus;
 
+    @Convert(converter = StringListConverter.class)
     @Column(name = "reasons", nullable = false)
     private List<String> reasons;
 }

@@ -50,7 +50,8 @@ cd JMSH-teamwork
 docker compose up -d
 
 # Run the sensor simulator (publishes telemetry to MQTT broker)
-./mvnw -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.pipeline.SensorSimulator"
+MQTT_USERNAME=simulator MQTT_PASSWORD=sim_pass_2024 \
+  ./mvnw -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.pipeline.SensorSimulator"
 
 # Run the event store CLI (import/query readings, scores, alerts)
 ./mvnw -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.store.EventStoreMain"

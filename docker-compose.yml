@@ -21,7 +21,6 @@ services:
     volumes:
       - ./dashboard/flows.json:/data/flows.json:ro
       - ./dashboard/settings.js:/data/settings.js:ro
-      - nodered-data:/data
     depends_on:
       - mosquitto
     restart: unless-stopped
@@ -41,7 +40,6 @@ services:
 volumes:
   mosquitto-data:
   mosquitto-log:
-  nodered-data:
   detection-alert-data:
 
 networks:
