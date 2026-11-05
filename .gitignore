@@ -22,6 +22,7 @@ local/
 
 # Secrets
 .env
+config/pwfile
 
 # Datasets (large; download separately, see README)
 data/*.csv
