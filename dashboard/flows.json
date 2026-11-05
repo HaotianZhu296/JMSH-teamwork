@@ -44,7 +44,7 @@
         "topic": "sensors/+/telemetry",
         "qos": "1",
         "datatype": "json",
-        "broker": "mqtt-broker",
+        "broker": "mhd-broker-cfg",
         "x": 130,
         "y": 80,
         "wires": [["parse-telemetry"]]
@@ -111,7 +111,7 @@
         "topic": "alerts/#",
         "qos": "1",
         "datatype": "json",
-        "broker": "mqtt-broker",
+        "broker": "mhd-broker-cfg",
         "x": 130,
         "y": 200,
         "wires": [["format-alert"]]
@@ -121,7 +121,7 @@
         "type": "function",
         "z": "mhd-tab",
         "name": "Format alert",
-        "func": "var a = msg.payload;\nvar ts = new Date(a.timestamp || a.timestampMs || Date.now());\nvar line = ts.toLocaleTimeString() + ' | ' + (a.severity || 'UNKNOWN') + ' | ' + (a.machine_id || a.machineId || '?') + ' | ' + (a.reason || a.detector || '');\nmsg.payload = line;\nreturn msg;",
+        "func": "var a = msg.payload;\nvar ts = new Date(a.timestamp || a.timestampMs || Date.now());\nvar severity = a.alertStatus || a.severity || 'UNKNOWN';\nvar machine = a.machineId || a.machine_id || '?';\nvar reason = '';\nif (Array.isArray(a.reasons) && a.reasons.length > 0) { reason = a.reasons.join('; '); } else { reason = a.reason || a.detector || ''; }\nvar line = ts.toLocaleTimeString() + ' | ' + severity + ' | ' + machine + ' | ' + reason;\nmsg.payload = line;\nreturn msg;",
         "x": 330,
         "y": 200,
         "wires": [["alert-log", "alert-notify"]]
@@ -161,7 +161,7 @@
         "wires": []
     },
     {
-        "id": "mqtt-broker",
+        "id": "mhd-broker-cfg",
         "type": "mqtt-broker",
         "name": "MHD Broker",
         "broker": "mosquitto",
