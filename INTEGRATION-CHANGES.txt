@@ -222,26 +222,77 @@ Part C (detection-alert):
 
 
 ================================================================================
+BUG FIXES (post-review)
+================================================================================
+
+1. Password Mismatch (generate-passwords.sh vs application.yaml)
+   Problem: generate-passwords.sh used "det_pass_2024" for the detector
+   user, but application.yaml had "detect_pass_2024". The one-character
+   difference caused MQTT authentication failure for the detection service.
+   Fix: Changed generate-passwords.sh to use "detect_pass_2024".
+
+2. Spring Integration "Dispatcher has no subscribers" (Part C)
+   Problem: MqttPahoMessageDrivenChannelAdapter was declared as a separate
+   @Bean. Spring auto-started it with its own default output channel, but
+   the IntegrationFlow created a different input channel — messages arrived
+   at a channel with no subscribers.
+   Fix: Removed the separate @Bean for the adapter. The adapter is now
+   constructed inline within the IntegrationFlow, so the flow manages the
+   adapter's lifecycle and channel wiring exclusively.
+
+3. Alert Publishing Not Implemented (Part C)
+   Problem: DetectionService evaluated sensor readings and saved results
+   to SQLite, but never published alerts back to MQTT. The dashboard
+   subscribed to alerts/# but nothing was writing there.
+   Fix: Added an outbound MQTT flow in MqttConfig.java:
+     - alertOutboundChannel (DirectChannel) + alertOutboundFlow with
+       MqttPahoMessageHandler (client-id: spring-detection-service-publisher)
+     - When inbound processing produces WARNING or CRITICAL status, the
+       EvaluationReturn is serialized to JSON and published to
+       alerts/{machineId}.
+     The detector user's ACL already permits "topic write alerts/#".
+
+4. Rotational Speed Thresholds Too Aggressive
+   Problem: rotationalSpeed thresholds (warning 1500, critical 2000) were
+   set for a generic predictive-maintenance dataset. The Electric Motor
+   Temperature dataset has motor_speed values up to ~6000 RPM, so nearly
+   every reading triggered a false warning.
+   Fix: Adjusted to warning 4000, critical 5500 in application.yaml.
+
+5. Node-RED Dashboard Package Missing
+   Problem: nodered/node-red:3.1 image does not include node-red-dashboard.
+   The UI widgets (chart, gauge, toast) returned 404.
+   Fix: Added dashboard/Dockerfile that installs node-red-dashboard.
+   Updated docker-compose.yml to build from that Dockerfile instead of
+   using the stock image.
+
+6. README Startup Commands Incorrect
+   Problem: README referenced non-existent classes PipelineMain and
+   EvaluationRunner. Also described anonymous broker access.
+   Fix: Updated to reference actual entry points (SensorSimulator,
+   EventStoreMain) and added password generation step.
+
+Files changed:
+  MOD  config/generate-passwords.sh      (password fix)
+  MOD  detection-alert/.../MqttConfig.java (dispatcher fix + alert publishing)
+  MOD  detection-alert/.../application.yaml (threshold tuning)
+  NEW  dashboard/Dockerfile               (node-red-dashboard install)
+  MOD  docker-compose.yml                 (build from Dockerfile)
+  MOD  README.md                          (startup commands)
+
+
+================================================================================
 REMAINING ITEMS
 ================================================================================
 
 1. Part B (data_training)
    No code on the branch. Training/evaluation module not yet implemented.
 
-2. Node-RED Dashboard Package
-   The nodered/node-red:3.1 Docker image does not include
-   "node-red-dashboard" by default. The UI widgets (chart, gauge, toast)
-   require it. Options:
-     a) Add to a custom Dockerfile:
-        RUN npm install node-red-dashboard
-     b) Install after container start:
-        docker exec mhd-dashboard npm install node-red-dashboard
-
-3. Password File Generation
+2. Password File Generation
    config/pwfile must be generated before docker-compose up.
    Run: ./config/generate-passwords.sh
    (requires mosquitto_passwd, installed via: brew install mosquitto)
 
-4. Part C contextLoads Test
+3. Part C contextLoads Test
    Fails without running infrastructure. Consider adding a test profile
    or @DisabledIfEnvironmentVariable to skip gracefully in CI.

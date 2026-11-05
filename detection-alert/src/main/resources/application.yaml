@@ -30,8 +30,8 @@ thresholds:
     warning: 80.0
     critical: 95.0
   rotationalSpeed:
-    warning: 1500.0
-    critical: 2000.0
+    warning: 4000.0
+    critical: 5500.0
   torque:
     warning: 300.0
     critical: 400.0

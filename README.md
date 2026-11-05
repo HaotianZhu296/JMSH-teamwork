@@ -43,30 +43,23 @@ cd JMSH-teamwork
 # Build and run tests
 ./mvnw clean test
 
-# Start the MQTT broker
+# Generate MQTT broker passwords (requires mosquitto_passwd)
+./config/generate-passwords.sh
+
+# Start infrastructure (Mosquitto broker, Node-RED dashboard, detection service)
 docker compose up -d
 
-# Run the offline evaluation (threshold + ML detectors on the full dataset)
-./mvnw -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.evaluation.EvaluationRunner"
+# Run the sensor simulator (publishes telemetry to MQTT broker)
+./mvnw -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.pipeline.SensorSimulator"
 
-# Run the real-time pipeline (simulator → MQTT → detection → alerts → SQLite)
-./mvnw -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.pipeline.PipelineMain"
+# Run the event store CLI (import/query readings, scores, alerts)
+./mvnw -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.store.EventStoreMain"
 
-# Stop the broker
+# Stop infrastructure
 docker compose down
 ```
 
-Pipeline configuration via system properties:
-
-| Property | Default | Description |
-|----------|---------|-------------|
-| `mqtt.broker` | `tcp://localhost:1883` | MQTT broker URL |
-| `data.file` | `data/ai4i2020.csv` | Sensor data CSV |
-| `data.limit` | `200` | Max readings to publish (0 = all) |
-| `sim.interval` | `100` | Milliseconds between readings |
-| `db.path` | `events.db` | SQLite database file |
-
-No secrets are needed for local development; the broker runs with anonymous access by default.
+The broker requires authentication. Run `generate-passwords.sh` before `docker compose up`.
 
 ## Progress So Far
 

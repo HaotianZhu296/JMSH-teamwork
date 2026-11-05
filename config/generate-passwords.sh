@@ -11,7 +11,7 @@ echo "=== Generating Mosquitto password file ==="
 
 # Create file with first user, then append the rest
 mosquitto_passwd -c -b "$PWFILE" simulator sim_pass_2024
-mosquitto_passwd    -b "$PWFILE" detector  det_pass_2024
+mosquitto_passwd    -b "$PWFILE" detector  detect_pass_2024
 mosquitto_passwd    -b "$PWFILE" eventstore evt_pass_2024
 mosquitto_passwd    -b "$PWFILE" dashboard  dash_pass_2024
 
