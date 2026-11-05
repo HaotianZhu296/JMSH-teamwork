@@ -135,12 +135,12 @@ public class DetectionService {
     /**
      * Temporary deterministic stand-in for the call to the predictive model.
      * The result is a risk score in the range [0, 1].
+     * Divisors calibrated for the Electric Motor Temperature dataset ranges.
      */
     private double calculateModelScore(SensorReading reading) {
-        double score = (reading.processTemperature() / 100
-                + reading.rotationalSpeed() / 3000
-                + reading.torque() / 80
-                + reading.toolWear() / 200) / 4;
+        double score = (reading.processTemperature() / 120
+                + reading.rotationalSpeed() / 6000
+                + reading.torque() / 1.5) / 3;
 
         return Math.max(0, Math.min(1, score));
     }

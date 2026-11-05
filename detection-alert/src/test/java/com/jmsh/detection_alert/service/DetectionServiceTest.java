@@ -32,10 +32,10 @@ class DetectionServiceTest {
         ReflectionTestUtils.setField(detectionService, "criticalAirTemperature", 90.0);
         ReflectionTestUtils.setField(detectionService, "warningProcessTemperature", 80.0);
         ReflectionTestUtils.setField(detectionService, "criticalProcessTemperature", 95.0);
-        ReflectionTestUtils.setField(detectionService, "warningRotationalSpeed", 1500.0);
-        ReflectionTestUtils.setField(detectionService, "criticalRotationalSpeed", 2000.0);
-        ReflectionTestUtils.setField(detectionService, "warningTorque", 300.0);
-        ReflectionTestUtils.setField(detectionService, "criticalTorque", 400.0);
+        ReflectionTestUtils.setField(detectionService, "warningRotationalSpeed", 4000.0);
+        ReflectionTestUtils.setField(detectionService, "criticalRotationalSpeed", 5500.0);
+        ReflectionTestUtils.setField(detectionService, "warningTorque", 0.8);
+        ReflectionTestUtils.setField(detectionService, "criticalTorque", 1.0);
         ReflectionTestUtils.setField(detectionService, "warningToolWear", 50.0);
         ReflectionTestUtils.setField(detectionService, "criticalToolWear", 75.0);
         ReflectionTestUtils.setField(detectionService, "warningScore", 0.65);
@@ -45,7 +45,7 @@ class DetectionServiceTest {
     @Test
     void processSensorReadingReturnsSafeEvaluationForNormalReading() {
         EvaluationReturn result = detectionService.processSensorReading(
-                new SensorReading("machine-1", "baseline", 25.0, 40.0, 500.0, 20.0, 10.0)
+                new SensorReading("machine-1", "baseline", 25.0, 40.0, 500.0, 0.3, 0.0)
         );
 
         assertEquals(AlertStatus.SAFE, result.ruleStatus());
@@ -57,7 +57,7 @@ class DetectionServiceTest {
     @Test
     void processSensorReadingChecksAllFieldsAndCriticalOverridesWarnings() {
         EvaluationReturn result = detectionService.processSensorReading(
-                new SensorReading("machine-2", "mixed", 80.0, 96.0, 1600.0, 350.0, 80.0)
+                new SensorReading("machine-2", "mixed", 80.0, 96.0, 4500.0, 0.9, 80.0)
         );
 
         assertEquals(AlertStatus.CRITICAL, result.ruleStatus());
@@ -75,7 +75,7 @@ class DetectionServiceTest {
     @Test
     void processSensorReadingAddsModelReasonWhenScoreReachesWarningThreshold() {
         EvaluationReturn result = detectionService.processSensorReading(
-                new SensorReading("machine-3", "model-risk", 25.0, 90.0, 1800.0, 50.0, 20.0)
+                new SensorReading("machine-3", "model-risk", 25.0, 90.0, 4500.0, 0.7, 0.0)
         );
 
         assertEquals(AlertStatus.WARNING, result.ruleStatus());

@@ -20,6 +20,7 @@ services:
       - "1880:1880"
     volumes:
       - ./dashboard/flows.json:/data/flows.json:ro
+      - ./dashboard/flows_cred.json:/data/flows_cred.json:ro
       - ./dashboard/settings.js:/data/settings.js:ro
     depends_on:
       - mosquitto

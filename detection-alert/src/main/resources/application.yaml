@@ -33,8 +33,8 @@ thresholds:
     warning: 4000.0
     critical: 5500.0
   torque:
-    warning: 300.0
-    critical: 400.0
+    warning: 0.8
+    critical: 1.0
   toolWear:
     warning: 50.0
     critical: 75.0
