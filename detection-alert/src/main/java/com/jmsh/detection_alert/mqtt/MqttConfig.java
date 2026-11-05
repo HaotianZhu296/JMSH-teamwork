@@ -32,19 +32,25 @@ public class MqttConfig {
     @Value("${mqtt.completion-timeout:5000}")
     private int completionTimeout;
 
+    @Value("${mqtt.username:}")
+    private String username;
+
+    @Value("${mqtt.password:}")
+    private String password;
+
     private final DetectionService detectionService;
     private final ObjectMapper objectMapper;
 
-    // Configure connection settings for Mosquitto
     @Bean
     public MqttPahoClientFactory mqttClientFactory() {
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
         MqttConnectOptions options = new MqttConnectOptions();
         options.setServerURIs(new String[]{ brokerUrl });
         options.setCleanSession(true);
-        // TODO: Add authentication if Mosquitto later
-        // options.setUserName("username");
-        // options.setPassword("password".toCharArray());
+        if (username != null && !username.isEmpty()) {
+            options.setUserName(username);
+            options.setPassword(password.toCharArray());
+        }
         factory.setConnectionOptions(options);
         return factory;
     }

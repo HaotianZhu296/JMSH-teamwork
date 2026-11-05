@@ -7,9 +7,12 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SensorSimulatorTest {
 
@@ -39,8 +42,9 @@ class SensorSimulatorTest {
         assertEquals(3, sent);
         assertEquals(List.of("sensors/motor-01/telemetry", "sensors/motor-01/telemetry",
                 "sensors/motor-01/telemetry"), topics);
-        assertEquals("42,motor-01,3,2,41.0000,25.0000,22.0000,1500.0000,10.0000,1.0000,2.0000,3.0000,4.0000",
-                payloads.get(1));
+        assertTrue(payloads.get(1).contains("\"machineId\":\"motor-01\""));
+        assertTrue(payloads.get(1).contains("\"processTemperature\":41.0000"));
+        assertTrue(payloads.get(1).contains("\"sampleIndex\":2"));
     }
 
     @Test
@@ -57,7 +61,7 @@ class SensorSimulatorTest {
         List<String> payloads = new ArrayList<>();
         SensorSimulator.run(readings(5), settings(new OverheatScenario(1, 2, 1, Double.NaN, 51)),
                 (t, p) -> payloads.add(p), () -> 0L);
-        List<String> temps = payloads.stream().map(p -> TelemetryCsv.parse(p).get(4)).toList();
+        List<String> temps = payloads.stream().map(p -> extractJsonField(p, "processTemperature")).toList();
         assertEquals(List.of("40.0000", "46.0000", "51.0000", "51.0000", "44.0000"), temps);
     }
 
@@ -84,7 +88,7 @@ class SensorSimulatorTest {
         SensorSimulator.run(readings(3), settings(null), retrying, () -> 0L);
 
         assertEquals(3, delivered.size());
-        assertEquals("2", TelemetryCsv.parse(delivered.get(1)).get(3));
+        assertEquals("2", extractJsonField(delivered.get(1), "sampleIndex"));
         assertEquals(List.of(500L, 1000L, 2000L), pauses);
     }
 
@@ -97,5 +101,12 @@ class SensorSimulatorTest {
         RetryingPublisher retrying = new RetryingPublisher(down, 1_200, pauses::add);
         assertThrows(MqttException.class, () -> retrying.publish("t", "p"));
         assertEquals(1_200L, pauses.stream().mapToLong(Long::longValue).sum());
+    }
+
+    private static String extractJsonField(String json, String field) {
+        Pattern p = Pattern.compile("\"" + field + "\":(\"[^\"]*\"|[^,}]+)");
+        Matcher m = p.matcher(json);
+        if (!m.find()) throw new AssertionError("field not found: " + field);
+        return m.group(1).replace("\"", "");
     }
 }

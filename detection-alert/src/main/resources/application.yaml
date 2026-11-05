@@ -16,9 +16,11 @@ spring:
 mqtt:
   broker-url: tcp://localhost:1883
   client-id: spring-detection-service
-  topic: sensors/+/detections
+  topic: sensors/+/telemetry
   qos: 1
   completion-timeout: 5000
+  username: detector
+  password: detect_pass_2024
 
 thresholds:
   airTemperature:

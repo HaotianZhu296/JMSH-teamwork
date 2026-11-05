@@ -119,7 +119,7 @@ public final class SensorSimulator {
             if (scenario != null) {
                 reading = scenario.apply(reading, i, datasetStartC);
             }
-            publisher.publish(topic, TelemetryCsv.format(reading, clockMs.getAsLong(), settings.machineId()));
+            publisher.publish(topic, TelemetryJson.format(reading, clockMs.getAsLong(), settings.machineId()));
             sent++;
             if (settings.intervalMs() > 0) {
                 Thread.sleep(settings.intervalMs());
