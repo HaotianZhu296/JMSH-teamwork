@@ -17,18 +17,14 @@ A real-time thermal anomaly detection system for industrial machines. The system
 
 ```
 JMSH-teamwork/
-  config/              Mosquitto broker configuration
-  data/                AI4I 2020 Predictive Maintenance dataset
-  docs/                Survey reports, evaluation reports
-  src/main/java/       Java source (detection, evaluation, pipeline, models)
-    detector/          Detector interface, ThresholdDetector, IsolationForest, EWMA
-    evaluation/        ConfusionMatrix, DatasetLoader, EvaluationRunner
-    model/             SensorReading, DetectorResult
-    pipeline/          SensorSimulator, DetectionService, AlertManager, PipelineMain
-    store/             EventStore (SQLite)
-  src/main/resources/  detector-config.properties
-  src/test/java/       JUnit 5 test suites
-  docker-compose.yml   Mosquitto broker (Docker)
+  config/              Mosquitto broker configuration (ACL, passwords)
+  dashboard/           Node-RED live dashboard (Dockerfile, flows, settings)
+  detection-alert/     Spring Boot detection & alerting service (Part C)
+  simulator/           Sensor data simulator over MQTT (Part A)
+  training/            ML model training & evaluation (Part B)
+  data/                Electric Motor Temperature dataset (download separately)
+  src/                 Event store, security, dashboard data provider (Part D)
+  docker-compose.yml   Full-stack orchestration
 ```
 
 ## Setup and Run
@@ -40,25 +36,27 @@ JMSH-teamwork/
 git clone https://github.com/HaotianZhu296/JMSH-teamwork.git
 cd JMSH-teamwork
 
-# Build and run tests
-./mvnw clean test
-
 # Generate MQTT broker passwords (requires mosquitto_passwd)
 ./config/generate-passwords.sh
 
-# Start infrastructure (Mosquitto broker, Node-RED dashboard, detection service)
-docker compose up -d
+# Download the Electric Motor Temperature dataset from Kaggle
+# Place measures_v2.csv in data/
 
-# Run the sensor simulator (publishes telemetry to MQTT broker)
-# Requires ./mvnw clean compile first
+# Start all services (broker, dashboard, detection, simulator)
+docker compose up -d --build
+
+# Or run the simulator locally instead of in Docker:
+cd simulator
+mvn clean compile
 MQTT_USERNAME=simulator MQTT_PASSWORD=sim_pass_2024 \
-  ./mvnw -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.pipeline.SensorSimulator"
+  mvn -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.pipeline.SensorSimulator"
 
-# Run the event store CLI (import/query readings, scores, alerts)
+# Run event store CLI (import/query readings, scores, alerts)
+cd ..
 ./mvnw -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.store.EventStoreMain" \
   -Dexec.args="summary events.db"
 
-# Stop infrastructure
+# Stop all services
 docker compose down
 ```
 
@@ -68,18 +66,18 @@ The broker requires authentication. Run `generate-passwords.sh` before `docker c
 
 | Functional Requirement (from Phase 1) | Status | Notes |
 |---|---|---|
-| FR-1: Sensor simulator publishes dataset records as JSON over MQTT | Not started | |
+| FR-1: Sensor simulator publishes dataset records as JSON over MQTT | Done | |
 | FR-2: Broker authenticates clients over TLS with topic ACLs | Partial | Mosquitto config and Docker Compose in place; TLS and auth not yet enabled |
-| FR-3: Detection service subscribes and validates messages | Not started | |
-| FR-4: Rule-based checks (absolute limit, rate of rise, persistence) | Not started | |
-| FR-5: ML anomaly score (Isolation Forest / EWMA) | Not started | |
-| FR-6: Alert manager with severity and dedup | Not started | |
-| FR-7: Event store persists readings, scores, alerts | Not started | |
-| FR-8: Live dashboard with alert history | Not started | Planned for Phase 3 |
+| FR-3: Detection service subscribes and validates messages | Done | |
+| FR-4: Rule-based checks (absolute limit, rate of rise, persistence) | Done | |
+| FR-5: ML anomaly score (Isolation Forest / EWMA) | Partial | Deterministic placeholder model |
+| FR-6: Alert manager with severity and dedup | Done | |
+| FR-7: Event store persists readings, scores, alerts | Done | |
+| FR-8: Live dashboard with alert history | Done | Node-RED with chart, gauge, alert feed |
 | FR-9: Offline evaluation (confusion matrix, precision, recall, F1) | Not started | |
-| FR-10: Config-driven thresholds and alert settings | Not started | |
+| FR-10: Config-driven thresholds and alert settings | Done | |
 
-**Working end to end:** The MQTT broker runs via Docker Compose and accepts connections. Core detection and pipeline code is under development.
+**Working end to end:** Simulator → MQTT broker → detection service → alert publishing → dashboard.
 
 ## Testing So Far
 

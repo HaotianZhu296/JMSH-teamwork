@@ -26,6 +26,19 @@ services:
       - mosquitto
     restart: unless-stopped
 
+  simulator:
+    build:
+      context: ./simulator
+    container_name: mhd-simulator
+    environment:
+      MQTT_USERNAME: simulator
+      MQTT_PASSWORD: sim_pass_2024
+    depends_on:
+      - mosquitto
+    volumes:
+      - ./data:/app/data:ro
+    restart: "no"
+
   detection-alert:
     build:
       context: ./detection-alert
