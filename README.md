@@ -10,7 +10,7 @@ A real-time thermal anomaly detection system for industrial machines. The system
 |---|---|---|
 | Juntao Li | @Juntao-Li | Dataset survey and data pipeline |
 | Mitchell Jindra | @mitchjindra413 | MQTT broker setup and streaming infrastructure |
-| Shuo Yang | @ShuoYang-cs | NIST SP 800-82 security review and controls |
+| Shuo Yang | @ShuoYang-cs | dataset, sensor simulator, train/validation/test split |
 | Haotian Zhu | @HaotianZhu296 | Anomaly detection, evaluation, and real-time pipeline |
 
 ## Repository Structure
@@ -99,7 +99,7 @@ The broker requires authentication. Run `generate-passwords.sh` before `docker c
 |---|---|
 | Juntao Li | Dataset survey (AI4I 2020, CWRU, NASA bearing); dataset comparison and selection |
 | Mitchell Jindra | Streaming tools survey; Mosquitto broker setup; Docker Compose configuration |
-| Shuo Yang | NIST SP 800-82 Rev. 3 review; security requirements analysis |
+| Shuo Yang | NIST SP 800-82 Rev. 3 review; security requirements analysis; Part A sensor simulator and data split |
 | Haotian Zhu | Anomaly detection library survey; project scaffolding (Maven, .gitignore, README) |
 
 ## Contributing
