@@ -99,7 +99,7 @@ The broker requires authentication. Run `generate-passwords.sh` before `docker c
 |---|---|
 | Juntao Li | Dataset survey (AI4I 2020, CWRU, NASA bearing); dataset comparison and selection |
 | Mitchell Jindra | Streaming tools survey; Mosquitto broker setup; Docker Compose configuration |
-| Shuo Yang | NIST SP 800-82 Rev. 3 review; security requirements analysis; Part A sensor simulator and data split |
+| Shuo Yang | NIST SP 800-82 Rev. 3 review; security requirements analysis; Part A sensor simulator (Java, 1 Hz MQTT replay), message format, train/validation/test split, Docker integration testing |
 | Haotian Zhu | Anomaly detection library survey; project scaffolding (Maven, .gitignore, README); integrated all four parts into unified pipeline; bug fixes across MQTT auth, Spring Integration, dashboard, model calibration; directory restructuring (simulator/, detection-alert/, dashboard/, training/) |
 
 ## Contributing
