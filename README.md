@@ -6,12 +6,12 @@ A real-time thermal anomaly detection system for industrial machines. The system
 
 ## Team
 
-| Member | GitHub Username | Role |
-|---|---|---|
-| Juntao Li | @Juntao-Li | Dataset survey and data pipeline |
-| Mitchell Jindra | @mitchjindra413 | MQTT broker setup and streaming infrastructure |
+| Member | GitHub Username | Role                                                   |
+|---|---|--------------------------------------------------------|
+| Juntao Li | @Juntao-Li | Dataset survey and data pipeline                       |
+| Mitchell Jindra | @mitchjindra413 | MQTT broker setup, Docker and detection-alert service  |
 | Shuo Yang | @ShuoYang-cs | dataset, sensor simulator, train/validation/test split |
-| Haotian Zhu | @HaotianZhu296 | Anomaly detection, evaluation, and real-time pipeline |
+| Haotian Zhu | @HaotianZhu296 | Anomaly detection, evaluation, and real-time pipeline  |
 
 ## Repository Structure
 
@@ -95,11 +95,11 @@ The broker requires authentication. Run `generate-passwords.sh` before `docker c
 
 ## Team Contributions
 
-| Member | Contributions This Phase |
-|---|---|
-| Juntao Li | Dataset survey (AI4I 2020, CWRU, NASA bearing); dataset comparison and selection |
-| Mitchell Jindra | Streaming tools survey; Mosquitto broker setup; Docker Compose configuration |
-| Shuo Yang | NIST SP 800-82 Rev. 3 review; security requirements analysis; Part A sensor simulator (Java, 1 Hz MQTT replay), message format, train/validation/test split, Docker integration testing |
+| Member | Contributions This Phase                                                                                                                                                                                                                                                                        |
+|---|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Juntao Li | Dataset survey (AI4I 2020, CWRU, NASA bearing); dataset comparison and selection                                                                                                                                                                                                                |
+| Mitchell Jindra | Detection-Alert Service; Mosquitto broker setup; Docker Compose configuration                                                                                                                                                                                                                   |
+| Shuo Yang | NIST SP 800-82 Rev. 3 review; security requirements analysis; Part A sensor simulator (Java, 1 Hz MQTT replay), message format, train/validation/test split, Docker integration testing                                                                                                         |
 | Haotian Zhu | Anomaly detection library survey; project scaffolding (Maven, .gitignore, README); integrated all four parts into unified pipeline; bug fixes across MQTT auth, Spring Integration, dashboard, model calibration; directory restructuring (simulator/, detection-alert/, dashboard/, training/) |
 
 ## Contributing
