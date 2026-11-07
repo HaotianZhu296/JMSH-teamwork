@@ -13,6 +13,44 @@ A real-time thermal anomaly detection system for industrial machines. The system
 | Shuo Yang | @ShuoYang-cs | dataset, sensor simulator, train/validation/test split |
 | Haotian Zhu | @HaotianZhu296 | Anomaly detection, evaluation, and real-time pipeline  |
 
+## System Architecture
+
+**Figure 1: End-to-End Pipeline**
+
+```
+┌──────────────┐     MQTT      ┌──────────────┐     MQTT      ┌──────────────┐
+│   Simulator  │──telemetry──▶│   Mosquitto   │──telemetry──▶│  Detection   │
+│   (Part A)   │   sensors/   │    Broker     │   sensors/   │   Service    │
+│              │  +/telemetry │  (auth+ACL)   │  +/telemetry │   (Part C)   │
+└──────────────┘              └──────┬────────┘              └──────┬───────┘
+                                     │                              │
+                                     │  MQTT alerts/{machineId}     │
+                                     │◀─────────────────────────────┘
+                                     │
+                              ┌──────▼────────┐              ┌──────────────┐
+                              │   Dashboard   │              │  Event Store │
+                              │  (Node-RED)   │              │   (Part D)   │
+                              │  charts+alerts│              │   SQLite     │
+                              └───────────────┘              └──────────────┘
+```
+
+Sensor readings flow left-to-right through the MQTT broker. The detection service evaluates each reading against rule-based thresholds and a predictive model, then publishes alerts back to the broker. The dashboard subscribes to both telemetry and alert topics for live visualization. The event store persists readings, scores, and alerts for offline analysis.
+
+## Performance and Detection Targets
+
+<!-- TODO: temporarily added, not fully tested — targets pending offline evaluation -->
+
+| Metric | Target | Notes |
+|---|---|---|
+| Precision | ≥ 0.85 | Minimize false alarms for maintenance technicians |
+| Recall | ≥ 0.90 | Catch at least 90% of real overheating events |
+| F1 Score | ≥ 0.87 | Balanced harmonic mean |
+| Detection latency | ≤ 2 s | From sensor reading to alert decision |
+| End-to-end latency | ≤ 5 s | From simulator publish to dashboard display |
+| False positive rate | ≤ 10% | Acceptable operational noise floor |
+
+These targets are configured in `detection-alert/src/main/resources/application.yaml` under `performance-targets` and enforced by `MetricsCollector`. Offline evaluation with confusion matrix reporting (FR-9) will validate these against the held-out test split.
+
 ## Repository Structure
 
 ```
@@ -67,14 +105,14 @@ The broker requires authentication. Run `generate-passwords.sh` before `docker c
 | Functional Requirement (from Phase 1) | Status | Notes |
 |---|---|---|
 | FR-1: Sensor simulator publishes dataset records as JSON over MQTT | Done | |
-| FR-2: Broker authenticates clients over TLS with topic ACLs | Partial | Mosquitto config and Docker Compose in place; TLS and auth not yet enabled |
+| FR-2: Broker authenticates clients with topic ACLs | Done | Password auth and per-topic ACLs enforced; TLS planned for Phase 3 |
 | FR-3: Detection service subscribes and validates messages | Done | |
 | FR-4: Rule-based checks (absolute limit, rate of rise, persistence) | Done | |
 | FR-5: ML anomaly score (Isolation Forest / EWMA) | Partial | Deterministic placeholder model |
 | FR-6: Alert manager with severity and dedup | Done | |
 | FR-7: Event store persists readings, scores, alerts | Done | |
-| FR-8: Live dashboard with alert history | Done | Node-RED with chart, gauge, alert feed |
-| FR-9: Offline evaluation (confusion matrix, precision, recall, F1) | Not started | |
+| FR-8: Live dashboard with alert history (core) | Done | Node-RED with chart, gauge, alert feed; moved from stretch to core |
+| FR-9: Offline evaluation (confusion matrix, precision, recall, F1) | Partial | MetricsCollector added with concrete targets; full evaluation pending |
 | FR-10: Config-driven thresholds and alert settings | Done | |
 
 **Working end to end:** Simulator → MQTT broker → detection service → alert publishing → dashboard.
@@ -86,21 +124,20 @@ The broker requires authentication. Run `generate-passwords.sh` before `docker c
 
 ## Next Steps (Phase 3)
 
-- Implement and integrate detection pipeline end to end (simulator → broker → detector → alerts → event store)
-- Build offline evaluation runner with confusion matrix reporting
-- Add TLS encryption and per-topic ACLs to the MQTT broker
-- Build a live dashboard (Node-RED or web-based) for alerts and temperature trends
+- Build offline evaluation runner with confusion matrix reporting against performance targets
+- Add TLS encryption to the MQTT broker (auth and ACLs already in place)
 - Complete NIST SP 800-82 threat model and control mapping
 - Run two optimization rounds with before/after metrics
+- Validate detection latency (≤ 2 s) and end-to-end latency (≤ 5 s) under load
 
 ## Team Contributions
 
-| Member | Contributions This Phase                                                                                                                                                                                                                                                                        |
-|---|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Juntao Li | Dataset survey and selection; Java-based ML development (Isolation Forest, Random Forest, GBDT, GRU); temperature forecasting and early-warning detection; feature engineering, model training, optimization, evaluation (MAE/RMSE, Precision/Recall); model serialization, loss visualization, and real-time inference integration.                                                                                                                                                                                                                |
-| Mitchell Jindra | Detection-Alert Service; Mosquitto broker setup; Docker Compose configuration                                                                                                                                                                                                                   |
-| Shuo Yang | NIST SP 800-82 Rev. 3 review; security requirements analysis; Part A sensor simulator (Java, 1 Hz MQTT replay), message format, train/validation/test split, Docker integration testing                                                                                                         |
-| Haotian Zhu | Anomaly detection library survey; project scaffolding (Maven, .gitignore, README); integrated all four parts into unified pipeline; bug fixes across MQTT auth, Spring Integration, dashboard, model calibration; directory restructuring (simulator/, detection-alert/, dashboard/, training/) |
+| Member | Contributions This Phase |
+|---|---|
+| Juntao Li | Dataset survey and selection; Java-based ML development (Isolation Forest, Random Forest, GBDT, GRU); temperature forecasting and early-warning detection; feature engineering, model training, optimization, evaluation (MAE/RMSE, Precision/Recall); model serialization, loss visualization, and real-time inference integration |
+| Mitchell Jindra | Detection-Alert Service; Mosquitto broker setup; Docker Compose configuration |
+| Shuo Yang | NIST SP 800-82 Rev. 3 review; security requirements analysis; Part A sensor simulator (Java, 1 Hz MQTT replay), message format, train/validation/test split, Docker integration testing |
+| Haotian Zhu | Anomaly detection library survey; project scaffolding (Maven, .gitignore, README); integrated all four parts into unified pipeline; bug fixes across MQTT auth, Spring Integration, dashboard, model calibration; directory restructuring (simulator/, detection-alert/, dashboard/, training/); added architecture diagram, performance targets, and MetricsCollector |
 
 ## Contributing
 
