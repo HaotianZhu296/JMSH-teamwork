@@ -94,6 +94,11 @@ cd ..
 ./mvnw -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.store.EventStoreMain" \
   -Dexec.args="summary events.db"
 
+# Run all tests
+./mvnw clean test              # root module (Part D event store, security)
+cd simulator && mvn clean test && cd ..   # simulator (Part A)
+cd detection-alert && ./mvnw clean test && cd ..  # detection-alert (Part C, needs MQTT broker running)
+
 # Stop all services
 docker compose down
 ```
@@ -120,7 +125,10 @@ The broker requires authentication. Run `generate-passwords.sh` before `docker c
 ## Testing So Far
 
 - **Framework:** JUnit 5 with JaCoCo coverage
-- Tests will be added alongside core components
+- **Root module (Part D):** 34 tests — EventStore, CsvImporter, BrokerAclValidator, DashboardDataProvider
+- **Simulator (Part A):** 24 tests (1 skipped) — MotorDataReader, OverheatScenario, SensorSimulator, TelemetryCsv, TelemetryJson
+- **Detection-alert (Part C):** 4 tests — DetectionService threshold/model evaluation, Spring context load
+- **Total: 62 tests, all passing**
 
 ## Next Steps (Phase 3)
 
