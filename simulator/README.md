@@ -13,7 +13,7 @@ MQTT_USERNAME=simulator MQTT_PASSWORD=sim_pass_2024 \
   mvn -q exec:java -Dexec.mainClass="edu.northeastern.cs5010.mhd.pipeline.SensorSimulator"
 ```
 
-An optional argument is the path of a properties file (default `src/main/resources/simulator.properties`; Docker uses `simulator-docker.properties`). `data.file` is relative to where you start the program, so with the default file start it from the repository root or change the path. The dataset (`measures_v2.csv`) is not in Git; download it from Kaggle and put it in `data/`.
+An optional argument is the path of a properties file (default `src/main/resources/simulator.properties`; Docker uses `simulator-docker.properties`). `data.file` is relative to where you start the program, so with the default file start it from the repository root or change the path. The dataset (`measures_v2.csv`, about 300 MB) is not in Git. Get it with `./scripts/download-dataset.sh` from the repository root (saves it in `data/`, checks the header and row count), or download it by hand from Kaggle. Per-profile statistics: [docs/dataset.md](../docs/dataset.md).
 
 Credentials are read from the environment (`MQTT_USERNAME`, `MQTT_PASSWORD`) and never from a file. A broker URL starting with `ssl://` can be used, with the trust store given as `-Djavax.net.ssl.trustStore=...`; this has not been tested against a TLS broker yet.
 
