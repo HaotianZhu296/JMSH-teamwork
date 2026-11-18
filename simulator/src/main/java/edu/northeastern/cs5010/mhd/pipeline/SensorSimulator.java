@@ -49,7 +49,18 @@ public final class SensorSimulator {
             String machineId,
             String topicTemplate,
             long reconnectMaxWaitMs,
-            OverheatScenario scenario) {
+            OverheatScenario scenario,
+            Path scenarioLogFile,
+            double scenarioWarningC,
+            double scenarioCriticalC) {
+
+        /** Settings without a scenario log. */
+        public Settings(String brokerUri, Path dataFile, int limit, int stride, List<Integer> profiles,
+                        long intervalMs, String machineId, String topicTemplate,
+                        long reconnectMaxWaitMs, OverheatScenario scenario) {
+            this(brokerUri, dataFile, limit, stride, profiles, intervalMs, machineId, topicTemplate,
+                    reconnectMaxWaitMs, scenario, null, 80.0, 95.0);
+        }
 
         public static Settings load(Path file) throws IOException {
             Properties p = new Properties();
@@ -66,7 +77,16 @@ public final class SensorSimulator {
                     p.getProperty("sim.machine_id", "motor-01"),
                     p.getProperty("sim.topic_template", "sensors/{machine_id}/telemetry"),
                     Long.parseLong(p.getProperty("sim.reconnect_max_wait_ms", "60000")),
-                    loadScenario(p));
+                    loadScenario(p),
+                    logFile(p),
+                    Double.parseDouble(p.getProperty("scenario.warning_c", "80").trim()),
+                    Double.parseDouble(p.getProperty("scenario.critical_c", "95").trim()));
+        }
+
+        /** Returns null unless {@code scenario.log_file} is set. */
+        static Path logFile(Properties p) {
+            String file = p.getProperty("scenario.log_file", "").trim();
+            return file.isEmpty() ? null : Path.of(file);
         }
 
         static List<Integer> parseProfiles(String text) {
@@ -107,6 +127,13 @@ public final class SensorSimulator {
     public static int run(List<MotorReading> readings, Settings settings,
                           Publisher publisher, LongSupplier clockMs)
             throws MqttException, InterruptedException {
+        return run(readings, settings, publisher, clockMs, null);
+    }
+
+    /** Same as above; if {@code recorder} is not null it sees every reading changed by the scenario. */
+    public static int run(List<MotorReading> readings, Settings settings,
+                          Publisher publisher, LongSupplier clockMs, ScenarioRecorder recorder)
+            throws MqttException, InterruptedException {
         OverheatScenario scenario = settings.scenario();
         double datasetStartC = Double.NaN;
         if (scenario != null && scenario.startReading() < readings.size()) {
@@ -119,7 +146,11 @@ public final class SensorSimulator {
             if (scenario != null) {
                 reading = scenario.apply(reading, i, datasetStartC);
             }
-            publisher.publish(topic, TelemetryJson.format(reading, clockMs.getAsLong(), settings.machineId()));
+            long timestampMs = clockMs.getAsLong();
+            publisher.publish(topic, TelemetryJson.format(reading, timestampMs, settings.machineId()));
+            if (recorder != null) {
+                recorder.observe(i, reading, timestampMs);
+            }
             sent++;
             if (settings.intervalMs() > 0) {
                 Thread.sleep(settings.intervalMs());
@@ -152,8 +183,20 @@ public final class SensorSimulator {
                 client.publish(topic, message);
             };
             Publisher publisher = new RetryingPublisher(direct, settings.reconnectMaxWaitMs(), Thread::sleep);
-            int sent = run(readings, settings, publisher, System::currentTimeMillis);
-            LOG.info("published " + sent + " messages to " + settings.brokerUri());
+            ScenarioRecorder recorder = null;
+            if (settings.scenario() != null && settings.scenarioLogFile() != null) {
+                recorder = new ScenarioRecorder(settings.scenario(), settings.machineId(),
+                        settings.scenarioWarningC(), settings.scenarioCriticalC());
+            }
+            try {
+                int sent = run(readings, settings, publisher, System::currentTimeMillis, recorder);
+                LOG.info("published " + sent + " messages to " + settings.brokerUri());
+            } finally {
+                if (recorder != null) {
+                    recorder.writeTo(settings.scenarioLogFile());
+                    LOG.info("scenario log written to " + settings.scenarioLogFile());
+                }
+            }
         } finally {
             if (client.isConnected()) {
                 client.disconnect();
