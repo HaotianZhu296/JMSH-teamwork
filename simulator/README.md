@@ -31,6 +31,8 @@ Credentials are read from the environment (`MQTT_USERNAME`, `MQTT_PASSWORD`) and
 | `sim.topic_template` | `sensors/{machine_id}/telemetry` | Topic. |
 | `sim.reconnect_max_wait_ms` | `60000` | How long to retry one message while the broker is down. |
 | `scenario.*` | off | Scripted overheating, see below. |
+| `scenario.log_file` | empty | If set (and the scenario is on), a JSON log of the injection is written there at the end of the run. |
+| `scenario.warning_c`, `scenario.critical_c` | `80`, `95` | Reference thresholds used only in the log. Keep them equal to `processTemperature` in `detection-alert/application.yaml`. |
 
 ### Choosing a profile
 
@@ -38,7 +40,7 @@ The default profile 57 (validation set) lasts 7,201 s at 1 Hz. Its winding tempe
 
 ### Scripted overheating
 
-For integration tests, set `scenario.enabled=true`. Starting at the `scenario.start`-th published reading (0-based), `stator_winding` (sent as `processTemperature`) rises linearly to `scenario.target_c` over `scenario.ramp` readings, stays there for `scenario.hold` readings, then the dataset values resume. If `scenario.base_c` is empty the ramp starts from the dataset's own value, so there is no jump. Other fields are unchanged and the result is deterministic. Record the start and the expected alert time when you use it, so that the evaluation can tell injected events from real ones.
+For integration tests, set `scenario.enabled=true`. Starting at the `scenario.start`-th published reading (0-based), `stator_winding` (sent as `processTemperature`) rises linearly to `scenario.target_c` over `scenario.ramp` readings, stays there for `scenario.hold` readings, then the dataset values resume. If `scenario.base_c` is empty the ramp starts from the dataset's own value, so there is no jump. Other fields are unchanged and the result is deterministic. Set `scenario.log_file` to record what was injected. The file lists the first and last injected reading, the peak, and the first reading at or above the warning and critical reference temperatures, each with `profileId`, `sampleIndex` and the publish `timestampMs` that was put in the message. An evaluation can use it to tell injected events from real ones and to know when an alert is expected. Dataset values outside the injected window can exceed the thresholds as well; they are not in the log.
 
 ## Tests
 
