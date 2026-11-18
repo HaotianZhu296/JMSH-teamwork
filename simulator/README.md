@@ -36,7 +36,7 @@ Credentials are read from the environment (`MQTT_USERNAME`, `MQTT_PASSWORD`) and
 
 ### Choosing a profile
 
-The default profile 57 (validation set) lasts 7,201 s at 1 Hz. Its winding temperature first passes 80 °C at about second 1,247 and 95 °C at about second 1,313, and the maximum is 131.6 °C, so a normal run shows WARNING and then CRITICAL without any injection. At the real rate that is a wait of about 21 minutes for the first warning; use `sim.interval=100` for a faster demo. Profiles 3 and 8 never exceed 46 °C and are not useful for demonstrating alerts. Profiles in the test set are reserved for the final evaluation.
+The default profile 57 (validation set) lasts 7,202 s at 1 Hz. Its winding temperature first passes 80 °C at about second 1,247 and 95 °C at about second 1,313, and the maximum is 131.6 °C, so a normal run shows WARNING and then CRITICAL without any injection. At the real rate that is a wait of about 21 minutes for the first warning; use `sim.interval=100` for a faster demo. Profiles 3 and 8 never exceed 46 °C and are not useful for demonstrating alerts. Profiles in the test set are reserved for the final evaluation.
 
 ### Scripted overheating
 
