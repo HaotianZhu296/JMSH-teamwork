@@ -1,0 +1,2 @@
+split,horizon,model,count,mae_c,mse_c2,rmse_c,p95_absolute_error_c,within_0_2_fraction,high_count,high_mae_c,baseline_mae_c,baseline_rmse_c,mae_improvement_pct,rmse_improvement_pct
+validation,1,GBDT_full_seed42,8000,0.053425754,0.008882523,0.094247138,0.189166989,0.956875000,941,0.08684388010629894,0.086169440,0.155478961,37.999187,39.382707

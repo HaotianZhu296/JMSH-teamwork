@@ -1,0 +1,6 @@
+horizon,profiles,bootstrap_repetitions,seed,mae_gain_c_low95,mae_gain_c_high95,interpretation
+1,10,2000,4242,0.018404855684494084,0.04477813488215928,positive means improvement over persistence
+5,10,2000,4242,0.12321681442498907,0.29307776889640946,positive means improvement over persistence
+10,10,2000,4242,0.2617081726831132,0.6219759718602549,positive means improvement over persistence
+30,10,2000,4242,0.5720727155658955,1.4650151545919856,positive means improvement over persistence
+60,10,2000,4242,0.7180855015566081,2.2820133607938975,positive means improvement over persistence

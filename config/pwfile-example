@@ -1,0 +1,5 @@
+# Mosquitto password file (example)
+# Generate the real pwfile with: ./config/generate-passwords.sh
+# This file is NOT used directly — copy or generate config/pwfile.
+#
+# Required users: simulator, detector, eventstore, dashboard
