@@ -1,101 +1,101 @@
-# Java 文件与功能对应表
+# Java Files and Responsibilities
 
-当前电机模块有 42 个生产 Java 文件，其中 8 个集中在 `legacy`。测试代码有 4 个文件。下面列出每个类在现有调用关系中的职责。主源码根目录为 `src/main/java/ml/motor/`。
+The motor module currently contains 42 production Java files, including 8 in `legacy`, and 4 test files. The tables below describe each class's role in the current implementation. The main source directory is `src/main/java/ml/motor/`.
 
-发布模型的直接调用入口为 `MotorPredictMain.java`。它读取 61 条 JSONL 历史，加载模型包，并输出五个时长的预测。默认使用仓库内的小样例，可从 `training/` 执行 `./scripts/run-java.sh ml.motor.MotorPredictMain`。
+`MotorPredictMain.java` is the direct entry point for the published models. It reads a 61-reading JSONL history, loads the model bundle, and outputs forecasts for all five horizons. By default, it uses the small example included in the repository. From `training/`, run `./scripts/run-java.sh ml.motor.MotorPredictMain`.
 
-## 日常训练的四个入口
+## Training and Analysis Entry Points
 
-| 文件 | 功能与输入输出 |
+| File | Purpose and inputs or outputs |
 |---|---|
-| `MotorFullTrainingMain.java` | 当前全量 GBDT 训练入口。读取 CSV 和原实验目录，核验数据哈希、Profile 划分和验证起点。训练 1/5/10/30/60 秒、种子 42/2026，输出新模型、指标、模型选择清单及保存加载检查。 |
-| `MotorHorizonExperimentMain.java` | 原多时长 GRU/GBDT 对照实验入口。负责训练配置、候选比较、验证集模型选择和一次性测试入口，还提供实验元数据和窗口清单的文件工具。全量训练入口复用这些工具。 |
-| `MotorTrainingAuditMain.java` | 训练后审计。统计原始行覆盖，按选择清单重载五个模型并核对验证结果，生成各棵树阶段的训练/验证曲线及模型校验和。 |
-| `ForecastDiagnosticsMain.java` | 误差原因分析。基于验证 Profile 做配对 bootstrap，对比 Persistence，并分析未来负载变化与误差的关系。未来工况仅用于事后分析。输出 `persistence_bootstrap.csv` 和 `validation_regimes.csv`。 |
+| `MotorFullTrainingMain.java` | Current GBDT training entry point using all valid training windows. Reads the CSV and previous experiment directory, verifies the dataset hash, Profile split and validation origins, and trains models for 1/5/10/30/60 seconds with seeds 42 and 2026. Writes new models, metrics, the model selection manifest, and save/reload checks. |
+| `MotorHorizonExperimentMain.java` | Original multi-horizon GRU/GBDT comparison entry point. Handles training configuration, candidate comparisons, validation-based model selection and the one-time test evaluation entry point. Also provides experiment metadata and window-manifest file utilities reused by the full-training runner. |
+| `MotorTrainingAuditMain.java` | Audits completed training. Measures coverage of original data rows, reloads the five selected models and checks their validation results, and generates training/validation curves by boosting stage and model checksums. |
+| `ForecastDiagnosticsMain.java` | Analyzes prediction errors using paired bootstrap sampling over validation Profiles, compares models with Persistence, and examines the relationship between future load changes and errors. Future operating conditions are used only for post-hoc analysis. Writes `persistence_bootstrap.csv` and `validation_regimes.csv`. |
 
-## 数据、时间窗口与特征
+## Data, Time Windows and Features
 
-| 文件 | 功能 |
+| File | Responsibility |
 |---|---|
-| `MotorReading.java` | 保存一条电机读数、Profile ID、原始样本索引，提供异常检测特征。 |
-| `MotorDataReader.java` | 用 Commons CSV 读取数据，按 Profile 保存记录并按 stride 降采样，保留原始 2 Hz 索引。 |
-| `ProfileSplitter.java` | 按完整 Profile 划分训练/验证/测试集。69 个 Profile、种子 42 时得到 48/10/11。 |
-| `ForecastWindows.java` | 生成过去 61 条的输入窗口和未来时长标签，检查连续性、有限数值及 Profile 边界。全量训练会分别枚举原始奇偶索引组成的两条 1 Hz 序列。 |
-| `MotorForecastV2.java` | 提取历史温度、温升速率、负载、电流和功率代理等 30 个特征，同时支持历史 GBDT V2 推理。当前 GBDT 的 33 个特征复用这里的前 30 个。 |
-| `MotorGruFeatures.java` | 为 GRU 的每个历史时间点生成固定顺序的 13 个特征，供训练和推理共用。 |
+| `MotorReading.java` | Stores one motor reading, its Profile ID and original sample index, and provides anomaly-detection features. |
+| `MotorDataReader.java` | Reads the dataset with Commons CSV, groups records by Profile and downsamples by stride while preserving the original 2 Hz indices. |
+| `ProfileSplitter.java` | Splits complete Profiles into training, validation and testing sets. For 69 Profiles and seed 42, the split is 48/10/11. |
+| `ForecastWindows.java` | Builds 61-reading historical input windows and future-horizon targets, checking continuity, finite values and Profile boundaries. Full training separately enumerates the two 1 Hz sequences formed from even and odd original indices. |
+| `MotorForecastV2.java` | Extracts 30 features covering historical temperature, temperature rise rates, load, current and power proxies. Also supports inference with the historical GBDT V2 model. The current GBDT reuses these 30 features as the first part of its 33-feature input. |
+| `MotorGruFeatures.java` | Generates 13 features in a fixed order for each historical time step. GRU training and inference share this implementation. |
 
-## 模型与统一评估
+## Models and Shared Evaluation
 
-| 文件 | 功能 |
+| File | Responsibility |
 |---|---|
-| `HorizonForecaster.java` | 统一的单时长模型接口，接收历史并返回摄氏度预测。 |
-| `TreeHorizonModel.java` | Smile GBDT 的训练、推理、特征扩展至 33 维、独立保存加载及逐棵树诊断预测。 |
-| `GruHorizonModel.java` | DJL GRU 网络、训练循环、早停、批量预测、模型保存加载及一致性检查。 |
-| `ForecastNormalizer.java` | 仅用训练窗口计算 GRU 输入和目标的标准化参数，负责保存、加载及温度变化量反标准化。 |
-| `BaselineForecaster.java` | Persistence 和历史趋势外推基准，用于量化模型是否有实际收益。 |
-| `ForecastModelRegistry.java` | 根据 `selection.properties` 加载每个时长选中的模型，并报告缺失或加载失败。 |
-| `ForecastEvaluation.java` | 统一计算 MAE、MSE、RMSE、P95、±0.2°C 比例、高温误差、逐 Profile 指标，并生成 CSV/PNG。 |
+| `HorizonForecaster.java` | Common interface for a single forecast horizon. Accepts historical readings and returns a temperature prediction in degrees Celsius. |
+| `TreeHorizonModel.java` | Implements Smile GBDT training and inference, extends the feature vector to 33 dimensions, saves and loads individual models, and produces predictions by boosting stage for diagnostics. |
+| `GruHorizonModel.java` | Implements the DJL GRU network, training loop, early stopping, batch predictions, model saving/loading and consistency checks. |
+| `ForecastNormalizer.java` | Computes GRU input and target normalization parameters from training windows only. Saves and loads those parameters and converts predicted temperature deltas back to their original scale. |
+| `BaselineForecaster.java` | Provides Persistence and historical-trend extrapolation baselines to measure whether a trained model adds value. |
+| `ForecastModelRegistry.java` | Loads the selected model for each horizon from `selection.properties` and reports missing models or loading failures. |
+| `ForecastEvaluation.java` | Computes MAE, MSE, RMSE, the 95th percentile absolute error, the fraction within ±0.2°C, high-temperature errors and per-Profile metrics. Produces CSV reports and PNG charts. |
 
-## 提供给团队的滚动预测接口
+## Rolling Forecast Interfaces for Team Integration
 
-| 文件 | 功能 |
+| File | Responsibility |
 |---|---|
-| `RollingForecastService.java` | 为每台机器维护 61 条历史，处理预热、重复、断点、Profile 变化及非法输入，调用缓存模型并组合当前状态、预测预警与异常结果。 |
-| `ForecastTelemetry.java` | 解析传感器 JSON 的字段、机器 ID、时间戳和索引，兼容团队字段名。 |
-| `ForecastEnvelope.java` | Dashboard 输出结构，包含实际温度、各时长预测、目标时间、状态与推理耗时。 |
-| `MotorForecastMqttMain.java` | MQTT 进程入口，订阅 `sensors/+/telemetry`，发布 `forecasts/<machineId>`，启动时加载模型。 |
-| `MotorForecastReplayMain.java` | 使用验证 Profile 回放数据到 MQTT，供团队联调。 |
-| `MotorForecastE2EMain.java` | MQTT 接入验证工具，检查多机器历史、预热、目标时间滚动与异常输入。执行时需要正在运行的 broker 和预测服务。 |
+| `RollingForecastService.java` | Maintains a 61-reading history for each machine. Handles warmup, duplicates, gaps, Profile changes and invalid input; calls cached models; and combines current thermal status, predictive warnings and anomaly results. |
+| `ForecastTelemetry.java` | Parses sensor JSON fields, machine IDs, timestamps and sample indices, with support for the team's existing field names. |
+| `ForecastEnvelope.java` | Defines the Dashboard output structure, including measured temperature, predictions by horizon, target timestamps, statuses and inference latency. |
+| `MotorForecastMqttMain.java` | MQTT process entry point. Subscribes to `sensors/+/telemetry`, publishes to `forecasts/<machineId>`, and loads models at startup. |
+| `MotorForecastReplayMain.java` | Replays data from validation Profiles over MQTT for team integration checks. |
+| `MotorForecastE2EMain.java` | MQTT integration verification tool. Checks machine-specific histories, warmup, rolling target timestamps and invalid input. Requires a running broker and forecast service. |
 
-这些类属于模型交付接口。团队的 `simulator/` 产生传感器数据，`detection-alert/` 负责现有检测和警报，`dashboard/` 负责显示。此处的推理接口被当前测试、MQTT 入口和团队联调用到。
+These classes provide the model delivery interfaces. The team's `simulator/` produces sensor data, `detection-alert/` handles existing detection and alerts, and `dashboard/` handles display. The inference interfaces are used by the current tests, MQTT entry point and team integration tools.
 
-## 异常检测及原接口兼容
+## Anomaly Detection and Legacy API Compatibility
 
-| 文件 | 保留的实际用途 |
+| File | Retained purpose |
 |---|---|
-| `MotorIsolationForestTrainer.java` | 训练 Isolation Forest 并估计异常阈值，由历史 `legacy.MotorMain` 调用。 |
-| `MotorModelStore.java` | 加载原 RF、Isolation Forest 和阈值配置。当前 MQTT 服务仍从此处获取异常模型。 |
-| `CurrentThermalDetector.java` | 根据当前温度、阈值和温升速率判断热状态，当前滚动服务仍调用。 |
-| `DetectionConfig.java` | 当前/未来温度阈值、温升阈值和异常阈值配置，供新旧服务使用。 |
-| `MotorSensorMessage.java` | 原传感器消息结构及到 `MotorReading` 的转换，当前 JSON 解析仍复用。 |
-| `DetectionResult.java` | 原检测接口的结果对象。 |
-| `MotorDetectionFacade.java` | 向调用者提供原 RF/异常检测接口，初始化模型和服务。 |
-| `UnifiedDetectionService.java` | 原 RF 60 秒预测与热状态、异常检测的组合服务。 |
-| `ForecastDatasetBuilder.java` | 原 RF 特征及样本构建，原模型元数据加载仍检查这些特征名。 |
-| `TemperatureForecastTrainer.java` | 原 RF 训练和预测，`UnifiedDetectionService` 使用其预测方法。 |
+| `MotorIsolationForestTrainer.java` | Trains Isolation Forest and estimates its anomaly threshold. Called by the historical `legacy.MotorMain` entry point. |
+| `MotorModelStore.java` | Loads the original Random Forest (RF), Isolation Forest and threshold configuration. The current MQTT service still uses it to obtain the anomaly model. |
+| `CurrentThermalDetector.java` | Determines thermal status from the current temperature, configured thresholds and temperature rise rate. Still used by the rolling service. |
+| `DetectionConfig.java` | Stores current/future temperature thresholds, the rise-rate threshold and the anomaly threshold for both the new and original services. |
+| `MotorSensorMessage.java` | Original sensor message structure and conversion to `MotorReading`. Still reused by the current JSON parser. |
+| `DetectionResult.java` | Result object for the original detection interface. |
+| `MotorDetectionFacade.java` | Exposes the original RF/anomaly-detection interface and initializes its models and service. |
+| `UnifiedDetectionService.java` | Combines the original RF 60-second forecast with thermal status and anomaly detection. |
+| `ForecastDatasetBuilder.java` | Builds features and samples for the original RF model. Loading the original model metadata still checks these feature names. |
+| `TemperatureForecastTrainer.java` | Trains the original RF model and provides the prediction method used by `UnifiedDetectionService`. |
 
-## 历史实验目录
+## Historical Experiments
 
-以下文件位于 `src/main/java/ml/motor/legacy/`，包名均为 `ml.motor.legacy`。其模型算法及参数保留，命令行和 IntelliJ Run Configuration 需使用新包名。
+The following files are in `src/main/java/ml/motor/legacy/`, all under the `ml.motor.legacy` package. Their model algorithms and parameters are retained. Command-line invocations and IntelliJ Run Configurations must use the updated package name.
 
-| 文件 | 用途 | 原输出路径 |
+| File | Purpose | Original output location |
 |---|---|---|
-| `MotorMain.java` | 原 RF + Isolation Forest 的训练、评估和保存演示 | `models/` |
-| `MotorInferenceMain.java` | 加载原 RF/Isolation Forest，使用合成消息检查推理接口和历史重置 | 读取参数指定的目录，默认 `models/` |
-| `MotorForecastV2Main.java` | 原单一 60 秒 GBDT V2 实验 | `models_v2/` |
-| `MotorGruTrainMain.java` | 原单一 60 秒 GRU V4 实验 | `models_gru_v4/` |
-| `MotorLearningCurveMain.java` | 原 RF 训练规模与误差曲线 | `results/learning_curve.csv/png` |
-| `MotorAnomalyEvaluator.java` | 原 Isolation Forest 误差/异常分布评估 | 控制台 |
-| `TemperatureModelEvaluator.java` | 原 RF 温度误差评估 | 控制台 |
-| `EarlyWarningEvaluator.java` | 原过热预警评估 | 控制台 |
+| `MotorMain.java` | Original RF and Isolation Forest training, evaluation and saving demonstration | `models/` |
+| `MotorInferenceMain.java` | Loads the original RF/Isolation Forest models and uses synthetic messages to check inference and history resets | Reads the directory specified by the argument; defaults to `models/` |
+| `MotorForecastV2Main.java` | Original single-horizon 60-second GBDT V2 experiment | `models_v2/` |
+| `MotorGruTrainMain.java` | Original single-horizon 60-second GRU V4 experiment | `models_gru_v4/` |
+| `MotorLearningCurveMain.java` | Original RF training-size and error curves | `results/learning_curve.csv/png` |
+| `MotorAnomalyEvaluator.java` | Original Isolation Forest error/anomaly distribution evaluation | Console |
+| `TemperatureModelEvaluator.java` | Original RF temperature-error evaluation | Console |
+| `EarlyWarningEvaluator.java` | Original overheating early-warning evaluation | Console |
 
-## 测试、配置和脚本
+## Tests, Configuration and Scripts
 
-| 文件 | 功能 |
+| File | Responsibility |
 |---|---|
-| `src/test/java/ml/motor/ForecastPipelineTest.java` | 特征顺序、因果窗口、标签、Profile 隔离、标准化、滚动历史、JSON、异常值和 GRU 保存重载，共 18 个测试用例。 |
-| `src/test/java/ml/motor/FullTrainingWindowsTest.java` | 两个 1 Hz 相位的窗口枚举、连续性、复现和 GBDT 分阶段预测，共 5 个用例。 |
-| `src/test/java/ml/motor/ForecastDiagnosticsTest.java` | 检查事后 Persistence 诊断不会覆盖已有全量训练对比报告。 |
-| `src/test/java/ml/motor/PublishedModelsTest.java` | 校验发布的五个模型、配置及选择清单哈希，验证其样例输出与原始本地模型一致。 |
-| `pom.xml` | Java 17 编译和 Smile、DJL、CSV、图表、MQTT、JSON、JUnit 依赖。各依赖均有当前调用者。 |
-| `scripts/mvn.sh` | 选择本机 Java 17 和 Maven。 |
-| `scripts/run-java.sh` | 编译、生成依赖 classpath，并启动指定 Java 主类。 |
-| `scripts/add-forecast-user.sh` | 团队 broker 的 forecast 用户配置辅助脚本。 |
-| `integration/forecast.properties` | 推理模型目录、broker 地址、阈值、机器容量和时间戳容差。 |
-| `integration/forecast-flow.json` | Node-RED Dashboard 的 MQTT 预测接入模板。 |
-| `integration/forecast-acl.conf` | 预测服务 MQTT 主题权限样例。 |
+| `src/test/java/ml/motor/ForecastPipelineTest.java` | Covers feature order, causal windows, targets, Profile isolation, normalization, rolling histories, JSON, invalid values and GRU save/reload behavior: 18 test cases. |
+| `src/test/java/ml/motor/FullTrainingWindowsTest.java` | Covers window enumeration across both 1 Hz phases, continuity, reproducibility and GBDT predictions by boosting stage: 5 test cases. |
+| `src/test/java/ml/motor/ForecastDiagnosticsTest.java` | Checks that post-hoc Persistence diagnostics do not overwrite the existing full-training comparison report. |
+| `src/test/java/ml/motor/PublishedModelsTest.java` | Checks hashes for the five published models, their metadata and the selection manifest, and verifies that example outputs match those from the original local models. |
+| `pom.xml` | Configures Java 17 compilation and the Smile, DJL, CSV, charting, MQTT, JSON and JUnit dependencies. Each dependency has a current use in the module. |
+| `scripts/mvn.sh` | Selects the local Java 17 and Maven installations. |
+| `scripts/run-java.sh` | Compiles the module, builds the dependency classpath and launches the specified Java main class. |
+| `scripts/add-forecast-user.sh` | Helps configure the forecast user for the team's broker. |
+| `integration/forecast.properties` | Configures model directories, broker address, thresholds, machine cache capacity and timestamp tolerance. |
+| `integration/forecast-flow.json` | Node-RED Dashboard template for receiving MQTT forecasts. |
+| `integration/forecast-acl.conf` | Example MQTT topic permissions for the forecast service. |
 
-## 训练数据流
+## Training Data Flow
 
 ```mermaid
 flowchart LR
@@ -105,7 +105,7 @@ flowchart LR
     D --> E[MotorFullTrainingMain]
     E --> F[TreeHorizonModel]
     F --> G[ForecastEvaluation]
-    G --> H[selection.properties 和模型文件]
+    G --> H[selection.properties and model files]
     H --> I[MotorTrainingAuditMain]
     H --> J[ForecastModelRegistry]
     J --> K[RollingForecastService]
