@@ -14,7 +14,7 @@ The file contains historical input measurements. The model generates all future 
 
 ## Java integration examples
 
-The [Word usage guide](../docs/Motor_Model_User_Guide.docx) explains input fields, Java calls, rolling outputs and optional MQTT integration. These complete Java 17 examples match the guide and run from the `training` directory:
+The [English Word usage guide](../docs/Motor_Model_User_Guide.docx) explains input fields, Java calls, rolling outputs and optional MQTT integration. These complete Java 17 examples match the guide and run from the `training` directory:
 
 ```bash
 ./scripts/run-java.sh examples/CallModelExample.java
