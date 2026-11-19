@@ -2,6 +2,8 @@
 
 This Java 17 module contains the selected, trained GBDT models for forecasts at +1, +5, +10, +30 and +60 seconds. Each model uses 61 consecutive 1 Hz readings and predicts a temperature change, which is added to the current measured temperature.
 
+For teammates: [download the Word model usage guide](docs/Motor_Model_User_Guide.docx). It includes setup, complete runnable Java examples, the input/output contract and optional MQTT integration. The examples are also available as source files in [examples/](examples/).
+
 ## Run the saved models
 
 From the repository root, run:
