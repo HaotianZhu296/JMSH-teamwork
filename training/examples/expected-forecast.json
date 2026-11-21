@@ -1,0 +1,27 @@
+{
+  "machineId": "example-profile79",
+  "timestampMs": 60000,
+  "currentTemperatureC": 50.64409999228406,
+  "forecasts": {
+    "1": {
+      "temperatureC": 51.04705548186387,
+      "targetTimestampMs": 61000
+    },
+    "5": {
+      "temperatureC": 52.52627737504552,
+      "targetTimestampMs": 65000
+    },
+    "10": {
+      "temperatureC": 54.194941786787325,
+      "targetTimestampMs": 70000
+    },
+    "30": {
+      "temperatureC": 59.33345099047213,
+      "targetTimestampMs": 90000
+    },
+    "60": {
+      "temperatureC": 64.46103310708841,
+      "targetTimestampMs": 120000
+    }
+  }
+}

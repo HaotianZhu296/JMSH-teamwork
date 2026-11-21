@@ -1,0 +1,47 @@
+[
+  {
+    "id": "ui-group-forecast",
+    "type": "ui_group",
+    "name": "Rolling Temperature Forecasts",
+    "tab": "ui-tab",
+    "order": 4,
+    "width": 12
+  },
+  {
+    "id": "mqtt-forecast",
+    "type": "mqtt in",
+    "z": "mhd-tab",
+    "name": "Real model forecasts",
+    "topic": "forecasts/+",
+    "qos": "1",
+    "datatype": "json",
+    "broker": "mhd-broker-cfg",
+    "x": 150,
+    "y": 340,
+    "wires": [
+      [
+        "ui-rolling-forecast"
+      ]
+    ]
+  },
+  {
+    "id": "ui-rolling-forecast",
+    "type": "ui_template",
+    "z": "mhd-tab",
+    "name": "Measured vs forecast",
+    "group": "ui-group-forecast",
+    "order": 1,
+    "width": 12,
+    "height": 16,
+    "format": "<div style=\"padding:8px;overflow-x:auto\">\n<p><b>Measured temperature and rolling forecasts (\u00b0C)</b> \u00b7 Each forecast uses the latest 61 continuous readings.</p>\n<p ng-if=\"!rows.length\">Waiting for forecast service \u2014 unavailable</p>\n<div ng-repeat=\"row in rows track by row.machineId\" style=\"border-bottom:1px solid #ddd;padding:14px 0\">\n<b>{{row.machineId}}</b> \u00b7 {{row.stale ? 'STALE \u2014 unavailable' : row.forecastStatus}} \u00b7 History {{row.historyCount}} / 61\n<table style=\"width:100%;table-layout:fixed;overflow-wrap:anywhere;text-align:left;font-size:11px;margin:10px 0\"><tr><th>Current (measured)</th><th ng-repeat=\"h in horizons\">Forecast +{{h}}s</th></tr>\n<tr><td>{{row.stale || row.currentTemperatureC == null ? 'unavailable' : (row.currentTemperatureC | number:3) + ' \u00b0C'}}</td>\n<td ng-repeat=\"h in horizons\">{{row.stale || row.forecasts[h].temperatureC == null ? 'unavailable' : (row.forecasts[h].temperatureC | number:3) + ' \u00b0C'}}</td></tr>\n<tr><td>Sensor time {{row.originTimestampMs | date:'HH:mm:ss'}}</td><td ng-repeat=\"h in horizons\">Target {{row.forecasts[h].targetTimestampMs | date:'HH:mm:ss'}}</td></tr>\n<tr><td></td><td ng-repeat=\"h in horizons\"><small>{{row.forecasts[h].model || 'model unavailable'}}</small></td></tr></table>\n<div>Current thermal status: <b>{{row.stale ? 'unavailable' : row.currentStatus}}</b> \u00b7 Combined thermal/forecast status: <b>{{row.stale ? 'unavailable' : row.status}}</b></div>\n<div>Isolation Forest: {{row.stale || row.statisticalAnomaly == null ? 'unavailable' : (row.statisticalAnomaly ? 'ANOMALY' : 'normal')}} \u00b7 Score {{row.stale || row.anomalyScore == null ? 'unavailable' : (row.anomalyScore | number:4)}}</div>\n<div>30/60s early warning: {{row.stale ? 'unavailable' : (row.predictiveWarning ? 'WARNING' : (row.forecasts['30'].temperatureC == null || row.forecasts['60'].temperatureC == null ? 'unavailable' : 'clear'))}} \u00b7 Inference {{row.inferenceLatencyMs | number:2}} ms</div>\n<div ng-if=\"row.reasons.length\"><small>{{row.reasons.join('; ')}}</small></div>\n</div></div>\n<script>\n(function(scope) {\n var machines = {}; scope.rows = []; scope.horizons = ['1','5','10','30','60'];\n scope.$watch('msg', function(msg) {\n  if (!msg || !msg.payload || msg.payload.schemaVersion !== 1) return;\n  var data = msg.payload; data.receivedAt = Date.now(); data.stale = false;\n  machines[data.machineId] = data;\n  var keys = Object.keys(machines).sort(function(a,b){return machines[b].receivedAt-machines[a].receivedAt;});\n  keys.slice(128).forEach(function(k){delete machines[k];});\n  scope.rows = keys.slice(0,128).map(function(k){return machines[k];});\n });\n var timer = setInterval(function(){scope.rows.forEach(function(r){r.stale=Date.now()-r.receivedAt>5000;});scope.$applyAsync();},1000);\n scope.$on('$destroy',function(){clearInterval(timer);});\n})(scope);\n</script>",
+    "storeOutMessages": false,
+    "fwdInMessages": false,
+    "resendOnRefresh": true,
+    "templateScope": "local",
+    "x": 440,
+    "y": 340,
+    "wires": [
+      []
+    ]
+  }
+]
